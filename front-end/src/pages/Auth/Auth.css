@@ -1,0 +1,71 @@
+.auth-container-wrapper {
+  background-color: #ffffff;
+  color: #2d3748;
+}
+
+/* Specificity of 0, 2, 0 to override Bootstrap .card */
+.card.auth-flat-card {
+  background-color: #FFFEFF;
+  border-radius: 2px;
+  padding: 24px 34px;
+  width: 351px;
+  height: 311px;
+  box-shadow: 0 0 1px rgba(23, 26, 31, 0.15), 0 0 2px rgba(23, 26, 31, 0.20);
+}
+
+/* Specificity of 0, 3, 0 to override Bootstrap .form-control */
+.auth-flat-card .form-control.auth-input-field {
+  background-color: #F9FAFB;
+  border: 1px solid #565D6D;
+  color: #565D6D;
+  border-radius: 2px;
+  height: 38px;
+  font-size: 12px;
+}
+
+.auth-flat-card .form-control.auth-input-field:focus {
+  border-color: #0E50E1;
+  box-shadow: none;
+  outline: none;
+}
+
+.auth-flat-card .form-control.auth-input-field::placeholder {
+  color: #565D6D;
+}
+
+/* Specificity of 0, 3, 0 to override Bootstrap .btn */
+.auth-flat-card .btn.auth-submit-btn {
+  background-color: #0E50E1;
+  border-radius: 2px;
+  height: 38px;
+  font-size: 10px;
+}
+
+.auth-title-step1 {
+  font-size: 11px;
+  color: #29354F;
+}
+
+.auth-title-step2 {
+  font-size: 29px;
+  color: #0e1b2e;
+}
+
+.auth-subtitle-step2 {
+  font-size: 11px;
+  color: #536488;
+}
+
+.auth-footer-link {
+  font-size: 11px;
+  color: #3F4C67;
+}
+
+.auth-footer-disclosure {
+  font-size: 11px;
+  color: #536488;
+}
+
+.auth-footer-disclosure a {
+  color: #0E50E1;
+}

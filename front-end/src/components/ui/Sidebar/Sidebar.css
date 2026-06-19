@@ -1,0 +1,49 @@
+.ui-sidebar {
+  width: 260px;
+  background-color: #323844;
+  border-right: 1px solid #2b303a;
+  flex-shrink: 0;
+}
+
+.ui-sidebar-btn {
+  background-color: #162032 !important;
+  border: 1px solid #9095A1 !important;
+  border-radius: 2px !important;
+  font-size: 14px;
+  color: white;
+  transition: opacity 0.2s, border-color 0.2s;
+}
+
+.ui-sidebar-btn:hover {
+  opacity: 0.9;
+}
+
+/* Board Sidebar Styling */
+
+.board-member-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background-color: #FF5722;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: bold;
+}
+
+.board-close-btn {
+  background-color: #D9534F;
+  color: white;
+  border: none;
+  padding: 8px;
+  border-radius: 4px;
+  font-weight: 600;
+  cursor: pointer;
+  width: 100%;
+}
+
+.board-close-btn:hover {
+  background-color: #c9302c;
+}

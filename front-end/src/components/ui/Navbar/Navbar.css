@@ -1,0 +1,31 @@
+.ui-navbar {
+  height: 49px;
+  background-color: #242A30;
+  border-bottom: 1px solid #1e2128;
+  box-sizing: border-box;
+}
+
+.ui-avatar {
+  width: 24px;
+  height: 24px;
+  background-color: #d9534f;
+  font-size: 10px;
+  font-weight: bold;
+  cursor: pointer;
+  user-select: none;
+}
+
+.navbar-icon-btn {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.navbar-icon-btn:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}

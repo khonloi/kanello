@@ -1,0 +1,53 @@
+.home-content {
+  background-color: #323844;
+}
+
+.home-logo {
+  font-family: sans-serif;
+}
+
+.home-section-title {
+  letter-spacing: 1px;
+  font-size: 13px;
+}
+
+.home-board-card {
+  width: 280px;
+  height: 140px;
+  background-color: #ffffff;
+  cursor: pointer;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+  border-radius: 4px;
+}
+
+.home-create-card {
+  width: 280px;
+  height: 140px;
+  background-color: transparent;
+  border: 1px dashed #6c757d;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: background-color 0.2s;
+}
+
+.home-create-card:hover {
+  background-color: rgba(255,255,255,0.05);
+}
+
+.home-create-text {
+  font-size: 14px;
+}
+
+.home-modal-backdrop {
+  background-color: rgba(0,0,0,0.6);
+}
+
+.home-modal-content {
+  background-color: #252830;
+  color: white;
+  border: 1px solid #444;
+}
+
+.home-btn-primary {
+  background-color: #4a8bf5;
+}

@@ -1,0 +1,235 @@
+.board-content {
+  background-color: #F4F5F7;
+}
+
+/* Secondary Header Styling */
+.board-header {
+  background-color: #743254;
+  height: 50px;
+  padding: 0 20px;
+}
+
+.board-title {
+  font-size: 16px;
+}
+
+.board-invite-btn {
+  background-color: rgba(255, 255, 255, 0.2);
+  padding: 6px 12px;
+  font-size: 14px;
+}
+
+.board-invite-btn:hover {
+  background-color: rgba(255, 255, 255, 0.3);
+}
+
+/* Kanban Board Styling */
+.board-canvas {
+  background-color: #F4F5F7;
+  padding: 10px;
+}
+
+/* List/Column Styling */
+div.board-list {
+  background-color: #0E0F05 !important;
+  border-radius: 2px !important;
+  width: 239px !important;
+  min-width: 239px !important;
+  border: 2px solid transparent !important;
+  padding: 12px 6px !important;
+}
+
+.board-list.active {
+  border: 2px solid #00C2FF !important;
+}
+
+.board-list-header {
+  padding: 0 6px 10px 6px;
+}
+
+.board-list-title {
+  font-size: 14px;
+}
+
+.board-list-cards {
+  gap: 8px;
+}
+
+/* Task Card Styling */
+.task-card {
+  background-color: #1A1D20;
+  border: 1px solid #9095A1;
+  border-radius: 1px;
+  font-size: 14px;
+  cursor: grab;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+.task-card:active {
+  cursor: grabbing;
+}
+
+.task-card.is-dragging {
+  opacity: 0.5;
+}
+
+.board-add-card-btn {
+  color: #9095A1;
+  font-size: 14px;
+  gap: 8px;
+  cursor: pointer;
+  padding: 4px 8px;
+}
+
+.board-add-card-btn:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+  color: white;
+}
+
+/* Add List Button Styling */
+.board-add-list-wrapper {
+  width: 239px;
+  min-width: 239px;
+}
+
+.board-add-list-btn {
+  background-color: #A16081 !important;
+  border: 1px solid #9095A1 !important;
+  border-radius: 1px !important;
+  padding: 8px;
+  color: #ffffff;
+  font-size: 13px;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.board-add-list-btn:hover {
+  background-color: #8c506e !important;
+}
+
+/* Input Forms Styling */
+.add-list-form {
+  background-color: #0E0F05;
+  padding: 8px;
+  border-radius: 2px;
+}
+
+.add-card-form {
+  margin-bottom: 4px;
+}
+
+.add-list-form .form-control,
+.add-card-form .form-control,
+.board-list-header .form-control {
+  background-color: #1A1D20;
+  border: 1px solid #9095A1;
+  border-radius: 1px;
+  color: white;
+  box-shadow: none;
+  font-size: 14px;
+}
+
+.add-list-form .form-control::placeholder,
+.add-card-form .form-control::placeholder {
+  color: #9095A1;
+}
+
+.add-list-form .form-control:focus,
+.add-card-form .form-control:focus,
+.board-list-header .form-control:focus {
+  background-color: #1A1D20;
+  border-color: #00C2FF;
+  color: white;
+  box-shadow: none;
+}
+
+.add-form-submit-btn {
+  background-color: #00C2FF;
+  color: #0E0F05;
+  border: none;
+  border-radius: 1px;
+  font-weight: 600;
+  padding: 4px 12px;
+  font-size: 14px;
+}
+
+.add-form-submit-btn:hover {
+  background-color: #0099cc;
+  color: #0E0F05;
+}
+
+/* Card Menu & Dropdown styling */
+.card-menu-trigger {
+  padding: 4px;
+  border-radius: 4px;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.card-menu-trigger:hover {
+  background-color: rgba(255, 255, 255, 0.15);
+  color: #ffffff !important;
+}
+
+.card-dropdown-menu {
+  background-color: #1A1D20 !important;
+  border: 1px solid #343A40 !important;
+  border-radius: 4px !important;
+  padding: 4px 0 !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4) !important;
+}
+
+.card-dropdown-item {
+  transition: background-color 0.15s ease !important;
+  cursor: pointer !important;
+  font-weight: 500 !important;
+  border: none !important;
+  width: 100% !important;
+  text-align: left !important;
+}
+
+.card-dropdown-item:hover {
+  background-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+.card-dropdown-item.text-danger:hover {
+  background-color: rgba(220, 53, 69, 0.12) !important;
+}
+
+/* Shared Modal Styling */
+.modal-header-icon {
+  font-size: 1.25rem;
+}
+
+.modal-title-input {
+  font-size: 1.5rem !important;
+  font-weight: 700 !important;
+  line-height: 1.2 !important;
+}
+
+.modal-title-text {
+  font-size: 1.5rem;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.description-textarea {
+  min-height: 120px !important;
+}
+
+.description-display {
+  min-height: 120px;
+}
+
+.description-display.empty {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.description-display:not(.empty) {
+  background-color: transparent;
+}
+
+.member-badge {
+  width: 32px;
+  height: 32px;
+  font-size: 14px;
+}
