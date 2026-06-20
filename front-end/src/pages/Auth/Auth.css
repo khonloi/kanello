@@ -9,7 +9,7 @@
   border-radius: 2px;
   padding: 24px 34px;
   width: 351px;
-  height: 311px;
+  min-height: 311px;
   box-shadow: 0 0 1px rgba(23, 26, 31, 0.15), 0 0 2px rgba(23, 26, 31, 0.20);
 }
 
@@ -21,11 +21,12 @@
   border-radius: 2px;
   height: 38px;
   font-size: 12px;
+  transition: var(--transition-fast);
 }
 
 .auth-flat-card .form-control.auth-input-field:focus {
   border-color: #0E50E1;
-  box-shadow: none;
+  box-shadow: 0 0 0 3px rgba(14, 80, 225, 0.2);
   outline: none;
 }
 
@@ -39,6 +40,16 @@
   border-radius: 2px;
   height: 38px;
   font-size: 10px;
+  transition: var(--transition-fast);
+}
+
+.auth-flat-card .btn.auth-submit-btn:hover {
+  background-color: #0c43bd;
+  transform: translateY(-1px);
+}
+
+.auth-flat-card .btn.auth-submit-btn:active {
+  transform: translateY(0) scale(0.98);
 }
 
 .auth-title-step1 {
@@ -68,4 +79,23 @@
 
 .auth-footer-disclosure a {
   color: #0E50E1;
+}
+
+.auth-flat-card .btn.auth-github-btn {
+  background-color: #24292e !important;
+  color: #ffffff !important;
+  border-radius: 2px !important;
+  height: 38px !important;
+  font-size: 11px !important;
+  transition: var(--transition-fast) !important;
+  border: none !important;
+}
+
+.auth-flat-card .btn.auth-github-btn:hover {
+  background-color: #2f363d !important;
+  color: #ffffff !important;
+}
+
+.auth-flat-card .btn.auth-github-btn:active {
+  transform: translateY(0) scale(0.98);
 }

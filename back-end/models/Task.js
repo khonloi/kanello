@@ -1,5 +1,15 @@
 const mongoose = require("mongoose");
 
+const githubAttachmentSchema = new mongoose.Schema({
+  type: {
+    type: String,
+    enum: ["pull_request", "commit", "issue"],
+    required: true,
+  },
+  number: String,
+  sha: String,
+});
+
 const taskSchema = new mongoose.Schema(
   {
     title: {
@@ -26,6 +36,7 @@ const taskSchema = new mongoose.Schema(
         ref: "User",
       },
     ],
+    githubAttachments: [githubAttachmentSchema],
   },
   {
     timestamps: true,

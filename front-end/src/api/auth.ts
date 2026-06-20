@@ -34,3 +34,14 @@ export async function signUp(
     throw new Error(err.message === "Request failed" ? "Failed to sign up." : err.message);
   });
 }
+
+export async function getGithubAuthUrl(): Promise<{ url: string }> {
+  return apiFetch("/auth/github/url");
+}
+
+export async function handleGithubCallback(code: string): Promise<{ token: string; email: string }> {
+  return apiFetch("/auth/github/callback", {
+    method: "POST",
+    body: JSON.stringify({ code }),
+  });
+}

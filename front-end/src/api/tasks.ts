@@ -1,5 +1,13 @@
 import { apiFetch } from "./client";
 
+export interface GithubAttachment {
+  attachmentId?: string;
+  _id?: string;
+  type: string;
+  number?: string;
+  sha?: string;
+}
+
 export interface Task {
   _id: string;
   title: string;
@@ -7,6 +15,7 @@ export interface Task {
   status: string;
   cardId: string;
   memberId: string[];
+  githubAttachments?: GithubAttachment[];
   createdAt: string;
   updatedAt: string;
 }
@@ -60,4 +69,37 @@ export async function removeMemberFromTask(boardId: string, cardId: string, task
     method: "DELETE",
   });
   return response.task;
+}
+
+export async function attachGithubResource(
+  boardId: string,
+  cardId: string,
+  taskId: string,
+  type: "pull_request" | "commit" | "issue",
+  number?: string,
+  sha?: string
+): Promise<GithubAttachment> {
+  return apiFetch(`/boards/${boardId}/cards/${cardId}/tasks/${taskId}/github-attach`, {
+    method: "POST",
+    body: JSON.stringify({ type, number, sha }),
+  });
+}
+
+export async function getGithubAttachments(
+  boardId: string,
+  cardId: string,
+  taskId: string
+): Promise<GithubAttachment[]> {
+  return apiFetch(`/boards/${boardId}/cards/${cardId}/tasks/${taskId}/github-attachments`);
+}
+
+export async function removeGithubAttachment(
+  boardId: string,
+  cardId: string,
+  taskId: string,
+  attachmentId: string
+): Promise<void> {
+  await apiFetch(`/boards/${boardId}/cards/${cardId}/tasks/${taskId}/github-attachments/${attachmentId}`, {
+    method: "DELETE",
+  });
 }

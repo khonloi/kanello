@@ -11,7 +11,9 @@ const userSchema = new mongoose.Schema(
     },
     verificationCode: {
       type: String,
-      required: [true, "Verification code is required"],
+    },
+    githubAccessToken: {
+      type: String,
     },
   },
   {

@@ -5,6 +5,7 @@ import Home from "./pages/Home/Home";
 import BoardPage from "./pages/Board/BoardPage";
 import Navbar from "./components/ui/Navbar/Navbar";
 import Sidebar from "./components/ui/Sidebar/Sidebar";
+import OAuthCallback from "./pages/Auth/OAuthCallback";
 import type { Board, User } from "./api";
 
 export interface LayoutContextType {
@@ -86,6 +87,10 @@ function App() {
         </Routes>
       ) : (
         <Routes>
+          <Route
+            path="/oauth/callback"
+            element={<OAuthCallback onLoginSuccess={handleLoginSuccess} />}
+          />
           <Route
             path="*"
             element={<AuthPage onLoginSuccess={handleLoginSuccess} />}

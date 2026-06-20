@@ -18,6 +18,17 @@
   cursor: pointer;
   box-shadow: 0 4px 6px rgba(0,0,0,0.1);
   border-radius: 4px;
+  transition: var(--transition-smooth);
+}
+
+.home-board-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 10px 20px rgba(0,0,0,0.15);
+}
+
+.home-board-card:active {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.12);
 }
 
 .home-create-card {
@@ -27,11 +38,18 @@
   border: 1px dashed #6c757d;
   cursor: pointer;
   border-radius: 4px;
-  transition: background-color 0.2s;
+  transition: var(--transition-smooth);
 }
 
 .home-create-card:hover {
   background-color: rgba(255,255,255,0.05);
+  border-color: #ffffff;
+  transform: translateY(-4px);
+  box-shadow: 0 10px 20px rgba(0,0,0,0.15);
+}
+
+.home-create-card:active {
+  transform: translateY(-1px);
 }
 
 .home-create-text {
@@ -50,4 +68,14 @@
 
 .home-btn-primary {
   background-color: #4a8bf5;
+  transition: var(--transition-fast);
+}
+
+.home-btn-primary:hover {
+  background-color: #357ae8;
+  transform: translateY(-1px);
+}
+
+.home-btn-primary:active {
+  transform: translateY(0);
 }

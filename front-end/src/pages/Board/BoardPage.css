@@ -17,6 +17,7 @@
   background-color: rgba(255, 255, 255, 0.2);
   padding: 6px 12px;
   font-size: 14px;
+  transition: var(--transition-fast);
 }
 
 .board-invite-btn:hover {
@@ -37,10 +38,12 @@ div.board-list {
   min-width: 239px !important;
   border: 2px solid transparent !important;
   padding: 12px 6px !important;
+  transition: var(--transition-smooth) !important;
 }
 
 .board-list.active {
-  border: 2px solid #00C2FF !important;
+  border: 2px solid #A16081 !important;
+  box-shadow: 0 0 12px rgba(161, 96, 129, 0.4) !important;
 }
 
 .board-list-header {
@@ -63,10 +66,17 @@ div.board-list {
   font-size: 14px;
   cursor: grab;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+  transition: var(--transition-fast);
+}
+
+.task-card:hover {
+  border-color: #A16081;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
 }
 
 .task-card:active {
   cursor: grabbing;
+  transform: scale(0.98);
 }
 
 .task-card.is-dragging {
@@ -79,6 +89,7 @@ div.board-list {
   gap: 8px;
   cursor: pointer;
   padding: 4px 8px;
+  transition: var(--transition-fast);
 }
 
 .board-add-card-btn:hover {
@@ -101,6 +112,7 @@ div.board-list {
   font-size: 13px;
   gap: 8px;
   cursor: pointer;
+  transition: var(--transition-fast);
 }
 
 .board-add-list-btn:hover {
@@ -127,6 +139,7 @@ div.board-list {
   color: white;
   box-shadow: none;
   font-size: 14px;
+  transition: var(--transition-fast);
 }
 
 .add-list-form .form-control::placeholder,
@@ -138,24 +151,29 @@ div.board-list {
 .add-card-form .form-control:focus,
 .board-list-header .form-control:focus {
   background-color: #1A1D20;
-  border-color: #00C2FF;
+  border-color: #A16081;
   color: white;
-  box-shadow: none;
+  box-shadow: 0 0 0 3px rgba(161, 96, 129, 0.25);
 }
 
 .add-form-submit-btn {
-  background-color: #00C2FF;
-  color: #0E0F05;
+  background-color: #A16081;
+  color: #ffffff;
   border: none;
   border-radius: 1px;
   font-weight: 600;
   padding: 4px 12px;
   font-size: 14px;
+  transition: var(--transition-fast);
 }
 
 .add-form-submit-btn:hover {
-  background-color: #0099cc;
-  color: #0E0F05;
+  background-color: #8c506e;
+  color: #ffffff;
+}
+
+.add-form-submit-btn:active {
+  transform: scale(0.98);
 }
 
 /* Card Menu & Dropdown styling */

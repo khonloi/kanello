@@ -3,6 +3,8 @@ import { useAuthForm } from "./hooks/useAuthForm";
 import logo from "../../assets/logo.png";
 import Button from "../../components/ui/Button/Button";
 import Input from "../../components/ui/Input/Input";
+import { getGithubAuthUrl } from "../../api/auth";
+
 interface AuthPageProps {
   onLoginSuccess: (email: string, token: string) => void;
 }
@@ -19,6 +21,15 @@ export default function AuthPage({ onLoginSuccess }: AuthPageProps) {
     success,
     handleSubmit,
   } = useAuthForm(onLoginSuccess);
+
+  const handleGithubLogin = async () => {
+    try {
+      const { url } = await getGithubAuthUrl();
+      window.location.href = url;
+    } catch (err) {
+      alert("Failed to initialize GitHub Login");
+    }
+  };
 
   return (
     <div className="auth-container-wrapper min-vh-100 d-flex align-items-center justify-content-center p-3">
@@ -108,6 +119,22 @@ export default function AuthPage({ onLoginSuccess }: AuthPageProps) {
             </Button>
           </div>
         </form>
+
+        <div className="d-flex align-items-center my-3">
+          <hr className="flex-grow-1" />
+          <span className="mx-2 text-muted small">OR</span>
+          <hr className="flex-grow-1" />
+        </div>
+
+        <Button
+          type="button"
+          variant="ghost"
+          fullWidth
+          className="auth-github-btn fw-medium d-flex align-items-center justify-content-center gap-2 mb-3"
+          onClick={handleGithubLogin}
+        >
+          <i className="bi bi-github"></i> Continue with GitHub
+        </Button>
 
         {/* Privacy Policy Footer */}
         <div>

@@ -366,4 +366,77 @@ router.put("/:id/move", async function (req, res, next) {
   }
 });
 
+/* Attach a GitHub Resource to a Task */
+router.post("/:id/github-attach", async function (req, res, next) {
+  try {
+    const { boardId, cardId, id } = req.params;
+    const { type, number, sha } = req.body;
+    
+    if (!["pull_request", "commit", "issue"].includes(type)) {
+      return res.status(400).json({ error: "Invalid attachment type" });
+    }
+
+    const task = await Task.findOne({ _id: id, cardId });
+    if (!task) return res.status(404).json({ error: "Task not found" });
+
+    // Validate access (basic check)
+    const board = await Board.findById(boardId);
+    if (!board) return res.status(404).json({ error: "Board not found" });
+
+    const newAttachment = { type, number, sha };
+    task.githubAttachments.push(newAttachment);
+    await task.save();
+
+    const savedAttachment = task.githubAttachments[task.githubAttachments.length - 1];
+
+    res.status(201).json({
+      taskId: id,
+      attachmentId: savedAttachment._id,
+      type: savedAttachment.type,
+      number: savedAttachment.number,
+      sha: savedAttachment.sha,
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+/* Retrieve Attached GitHub Attachments of a Task */
+router.get("/:id/github-attachments", async function (req, res, next) {
+  try {
+    const { cardId, id } = req.params;
+    const task = await Task.findOne({ _id: id, cardId });
+    if (!task) return res.status(404).json({ error: "Task not found" });
+
+    const attachments = task.githubAttachments.map(att => ({
+      attachmentId: att._id,
+      type: att.type,
+      number: att.number,
+      sha: att.sha,
+    }));
+    
+    res.json(attachments);
+  } catch (err) {
+    next(err);
+  }
+});
+
+/* Remove GitHub Attachment from a Task */
+router.delete("/:id/github-attachments/:attachmentId", async function (req, res, next) {
+  try {
+    const { cardId, id, attachmentId } = req.params;
+    const task = await Task.findOne({ _id: id, cardId });
+    if (!task) return res.status(404).json({ error: "Task not found" });
+
+    task.githubAttachments = task.githubAttachments.filter(
+      att => att._id.toString() !== attachmentId.toString()
+    );
+    await task.save();
+
+    res.status(204).send();
+  } catch (err) {
+    next(err);
+  }
+});
+
 module.exports = router;

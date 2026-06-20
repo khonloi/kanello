@@ -9,6 +9,7 @@ export default defineConfig({
       '/auth': 'http://localhost:3000',
       '/invitations': 'http://localhost:3000',
       '/boards': 'http://localhost:3000',
+      '/repositories': 'http://localhost:3000',
     }
   }
 })
