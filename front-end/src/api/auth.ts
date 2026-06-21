@@ -1,37 +1,28 @@
 import { apiFetch } from "./client";
 
-export interface SignInResponse {
+export interface VerifyOtpResponse {
   token: string;
+  email: string;
 }
 
-export interface SignUpResponse {
-  user: {
-    _id: string;
-    email: string;
-  };
-}
-
-export async function signIn(
-  email: string,
-  code: string,
-): Promise<SignInResponse> {
-  return apiFetch("/auth/signin", {
+export async function sendOtp(email: string): Promise<{ message: string }> {
+  return apiFetch("/auth/send-otp", {
     method: "POST",
-    body: JSON.stringify({ email, verificationCode: code }),
+    body: JSON.stringify({ email }),
   }).catch((err) => {
-    throw new Error(err.message === "Request failed" ? "Incorrect verification code." : err.message);
+    throw new Error(err.message === "Request failed" ? "Failed to send OTP." : err.message);
   });
 }
 
-export async function signUp(
+export async function verifyOtp(
   email: string,
   code: string,
-): Promise<SignUpResponse> {
-  return apiFetch("/auth/signup", {
+): Promise<VerifyOtpResponse> {
+  return apiFetch("/auth/verify-otp", {
     method: "POST",
-    body: JSON.stringify({ email, verificationCode: code }),
+    body: JSON.stringify({ email, code }),
   }).catch((err) => {
-    throw new Error(err.message === "Request failed" ? "Failed to sign up." : err.message);
+    throw new Error(err.message === "Request failed" ? "Incorrect verification code or code expired." : err.message);
   });
 }
 

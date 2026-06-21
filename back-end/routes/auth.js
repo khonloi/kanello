@@ -8,46 +8,78 @@ const JWT_SECRET = process.env.JWT_SECRET;
 const GITHUB_CLIENT_ID = process.env.GITHUB_CLIENT_ID;
 const GITHUB_CLIENT_SECRET = process.env.GITHUB_CLIENT_SECRET;
 
-/* Sign Up a New User */
-router.post("/signup", async function (req, res, next) {
+const { sendOtpEmail } = require("../utils/mailer");
+
+// Helper function to generate a 6-digit OTP
+const generateOTP = () => {
+  return Math.floor(100000 + Math.random() * 900000).toString();
+};
+
+/* Send OTP */
+router.post("/send-otp", async function (req, res, next) {
   try {
-    const { email, verificationCode } = req.body;
-    if (!email || !verificationCode) {
-      return res
-        .status(400)
-        .json({ error: "Email and verification code are required" });
+    const { email } = req.body;
+    if (!email) {
+      return res.status(400).json({ error: "Email is required" });
     }
 
-    const existingUser = await User.findOne({ email });
-    if (existingUser) {
-      return res.status(400).json({ error: "Email already exists" });
+    const otp = generateOTP();
+    // Set expiration to 10 minutes from now
+    const expiresAt = new Date();
+    expiresAt.setMinutes(expiresAt.getMinutes() + 10);
+
+    let user = await User.findOne({ email: email.toLowerCase() });
+    
+    if (user) {
+      user.verificationCode = otp;
+      user.verificationCodeExpires = expiresAt;
+      await user.save();
+    } else {
+      user = new User({
+        email: email.toLowerCase(),
+        verificationCode: otp,
+        verificationCodeExpires: expiresAt,
+      });
+      await user.save();
     }
 
-    const user = new User({ email, verificationCode });
-    await user.save();
+    // Send the email
+    await sendOtpEmail(user.email, otp);
 
-    res.status(201).json({ user: { _id: user._id, email: user.email } });
+    res.status(200).json({ message: "OTP sent successfully" });
   } catch (err) {
     next(err);
   }
 });
 
-/* Sign In User */
-router.post("/signin", async function (req, res, next) {
+/* Verify OTP */
+router.post("/verify-otp", async function (req, res, next) {
   try {
-    const { email, verificationCode } = req.body;
-    if (!email || !verificationCode) {
+    const { email, code } = req.body;
+    if (!email || !code) {
       return res
         .status(400)
         .json({ error: "Email and verification code are required" });
     }
 
-    const user = await User.findOne({ email });
-    if (!user || user.verificationCode !== verificationCode) {
-      return res
-        .status(401)
-        .json({ error: "Invalid email or verification code" });
+    const user = await User.findOne({ email: email.toLowerCase() });
+    
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
     }
+
+    if (user.verificationCode !== code) {
+      return res.status(401).json({ error: "Invalid verification code" });
+    }
+
+    if (user.verificationCodeExpires && user.verificationCodeExpires < new Date()) {
+      return res.status(401).json({ error: "Verification code has expired" });
+    }
+
+    // Code is valid, clear the OTP fields
+    user.verificationCode = undefined;
+    user.verificationCodeExpires = undefined;
+    await user.save();
 
     const token = jwt.sign(
       { userId: user._id, email: user.email },
@@ -57,7 +89,7 @@ router.post("/signin", async function (req, res, next) {
       },
     );
 
-    res.json({ token });
+    res.json({ token, email: user.email });
   } catch (err) {
     next(err);
   }

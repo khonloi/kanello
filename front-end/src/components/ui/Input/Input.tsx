@@ -1,4 +1,4 @@
-import { useId } from 'react';
+import React, { useId } from 'react';
 import type { InputHTMLAttributes, ReactNode } from 'react';
 
 export interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
@@ -8,6 +8,20 @@ export interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   variant?: 'dark' | 'light' | 'none';
 }
 
+function getTextFromNode(node: React.ReactNode): string {
+  if (!node) return "";
+  if (typeof node === "string" || typeof node === "number") {
+    return String(node);
+  }
+  if (Array.isArray(node)) {
+    return node.map(getTextFromNode).join("");
+  }
+  if (React.isValidElement(node)) {
+    return getTextFromNode((node.props as any).children);
+  }
+  return "";
+}
+
 export default function Input({
   label,
   error,
@@ -15,26 +29,34 @@ export default function Input({
   className = '',
   variant = 'dark',
   id,
+  placeholder,
   ...props
 }: InputProps) {
   const generatedId = useId();
   const inputId = id || generatedId;
 
-  const variantClass = 
-    variant === 'dark' ? 'bg-dark text-white border-secondary' : 
-    variant === 'light' ? 'bg-white text-dark border-secondary' : '';
+  // Apply custom styling to all standard inputs (variant !== 'none') to keep styling consistent
+  const isCustomInput = variant !== 'none';
+
+  const variantClass = variant === 'none'
+    ? ''
+    : (variant === 'light' ? 'bg-white text-dark border-secondary' : 'modal-input-custom');
 
   const invalidClass = error ? 'is-invalid' : '';
 
+  const finalPlaceholder = placeholder || (isCustomInput ? getTextFromNode(label) : undefined);
+  const showLabel = label && !isCustomInput;
+
   return (
     <div className={containerClassName}>
-      {label && (
+      {showLabel && (
         <label htmlFor={inputId} className="form-label text-secondary small fw-bold mb-1">
           {label}
         </label>
       )}
       <input
         id={inputId}
+        placeholder={finalPlaceholder}
         className={`form-control ${variantClass} ${invalidClass} ${className}`.trim()}
         {...props}
       />

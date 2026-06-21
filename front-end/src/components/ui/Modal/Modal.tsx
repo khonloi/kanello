@@ -1,4 +1,6 @@
-import React from "react";
+import React, { createContext } from "react";
+
+export const ModalContext = createContext(false);
 
 interface ModalProps {
   isOpen: boolean;
@@ -18,35 +20,50 @@ export default function Modal({
   if (!isOpen) return null;
 
   return (
-    <div
-      className="modal d-block"
-      style={{ backgroundColor: "rgba(0,0,0,0.6)" }}
-      tabIndex={-1}
-    >
+    <ModalContext.Provider value={true}>
+      <div
+        className="modal d-block"
+        style={{ backgroundColor: "rgba(0,0,0,0.6)" }}
+        tabIndex={-1}
+      >
       <div
         className={`modal-dialog modal-dialog-centered ${size ? `modal-${size}` : ""}`}
       >
-        <div className="modal-content bg-dark text-white border-secondary">
+        <div
+          className="modal-content text-white border-0"
+          style={{
+            backgroundColor: "#272d33",
+            padding: "20px",
+            position: "relative",
+            border: "none",
+          }}
+        >
           <div
-            className="modal-header border-secondary border-bottom-0 position-relative"
-            style={{ padding: "1.5rem" }}
+            className="modal-header border-0"
+            style={{ padding: 0 }}
           >
-            <h5 className="modal-title fw-bold w-100 pe-4">{title}</h5>
+            <h5
+              className="modal-title w-100 pe-4"
+              style={{ fontSize: "19px", fontWeight: 700 }}
+            >
+              {title}
+            </h5>
             <button
               type="button"
               className="btn-close btn-close-white position-absolute"
-              style={{ top: "1.5rem", right: "1.5rem" }}
+              style={{ top: "20px", right: "20px" }}
               onClick={onClose}
             ></button>
           </div>
           <div
             className="modal-body"
-            style={{ padding: "0 1.5rem 1.5rem 1.5rem" }}
+            style={{ padding: 0, marginTop: "15px" }}
           >
             {children}
           </div>
         </div>
       </div>
     </div>
+    </ModalContext.Provider>
   );
 }

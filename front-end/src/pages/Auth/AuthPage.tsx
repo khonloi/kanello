@@ -107,7 +107,7 @@ export default function AuthPage({ onLoginSuccess }: AuthPageProps) {
           )}
 
           {/* Action button */}
-          <div className="mb-2">
+          <div>
             <Button
               type="submit"
               variant="primary"
@@ -120,7 +120,7 @@ export default function AuthPage({ onLoginSuccess }: AuthPageProps) {
           </div>
         </form>
 
-        <div className="d-flex align-items-center my-3">
+        <div className="d-flex align-items-center my-1">
           <hr className="flex-grow-1" />
           <span className="mx-2 text-muted small">OR</span>
           <hr className="flex-grow-1" />

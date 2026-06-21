@@ -82,7 +82,11 @@ export default function Sidebar({
             You can't find and reopen closed boards if close the board
           </p>
           {isOwner && onDeleteBoard && (
-            <Button variant="danger" className="board-close-btn" onClick={onDeleteBoard}>
+            <Button
+              variant="danger"
+              className="board-close-btn"
+              onClick={onDeleteBoard}
+            >
               Close
             </Button>
           )}

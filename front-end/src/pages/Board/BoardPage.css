@@ -219,13 +219,13 @@ div.board-list {
 }
 
 .modal-title-input {
-  font-size: 1.5rem !important;
+  font-size: 19px !important;
   font-weight: 700 !important;
   line-height: 1.2 !important;
 }
 
 .modal-title-text {
-  font-size: 1.5rem;
+  font-size: 19px;
   font-weight: 700;
   line-height: 1.2;
 }
@@ -236,18 +236,33 @@ div.board-list {
 
 .description-display {
   min-height: 120px;
-}
-
-.description-display.empty {
-  background-color: rgba(255, 255, 255, 0.1);
-}
-
-.description-display:not(.empty) {
-  background-color: transparent;
+  background-color: #16191C !important;
+  border: 1px solid #9095A1 !important;
+  border-radius: 2px !important;
+  font-size: 16px !important;
+  padding: 16px !important;
+  color: #ffffff !important;
 }
 
 .member-badge {
   width: 32px;
   height: 32px;
   font-size: 14px;
+}
+
+.github-info-results {
+  font-size: 14px;
+}
+
+.github-info-results .small {
+  font-size: 14px !important;
+}
+
+.github-attachment-item {
+  background-color: transparent !important;
+  border: 1px solid #BDC1CA !important;
+  border-radius: 2px !important;
+  padding: 8px 12px !important;
+  font-size: 14px !important;
+  color: #BDC1CA !important;
 }

@@ -12,6 +12,9 @@ const userSchema = new mongoose.Schema(
     verificationCode: {
       type: String,
     },
+    verificationCodeExpires: {
+      type: Date,
+    },
     githubAccessToken: {
       type: String,
     },
