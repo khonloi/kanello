@@ -13,6 +13,17 @@
   font-size: 16px;
 }
 
+.board-title.clickable {
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: background-color 0.2s;
+}
+
+.board-title.clickable:hover {
+  background-color: rgba(255, 255, 255, 0.15);
+}
+
 .board-invite-btn {
   background-color: rgba(255, 255, 255, 0.2);
   padding: 6px 12px;
@@ -262,7 +273,7 @@ div.board-list {
   background-color: transparent !important;
   border: 1px solid #BDC1CA !important;
   border-radius: 2px !important;
-  padding: 8px 12px !important;
+  padding: 0.25rem 0.5rem !important;
   font-size: 14px !important;
   color: #BDC1CA !important;
 }

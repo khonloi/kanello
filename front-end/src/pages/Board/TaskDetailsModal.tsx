@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import Modal from "../../components/ui/Modal/Modal";
+import ConfirmModal from "../../components/ui/Modal/ConfirmModal";
 import {
   updateTask,
   assignMemberToTask,
@@ -25,8 +26,14 @@ export default function TaskDetailsModal({
   task,
   card,
 }: TaskDetailsModalProps) {
-  const { board, members, fetchBoardData, setSelectedTask, currentUserId } =
-    useBoardContext();
+  const {
+    board,
+    members,
+    fetchBoardData,
+    setSelectedTask,
+    currentUserId,
+    handleDeleteTask,
+  } = useBoardContext();
 
   const boardId = board?._id || "";
   const isOwner = board ? currentUserId === board.userId : false;
@@ -35,6 +42,7 @@ export default function TaskDetailsModal({
   const [title, setTitle] = useState("");
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [showMembersDropdown, setShowMembersDropdown] = useState(false);
+  const [isDeleteTaskModalOpen, setIsDeleteTaskModalOpen] = useState(false);
 
   useEffect(() => {
     if (task) {
@@ -117,21 +125,41 @@ export default function TaskDetailsModal({
             autoFocus
           />
         ) : (
-          <h4
-            className="m-0 text-white w-100 modal-title-text"
-            style={{
-              cursor: isOwner ? "pointer" : "default",
-            }}
-            onClick={() => isOwner && setIsEditingTitle(true)}
-          >
-            {task.title}
-          </h4>
+          <div className="d-flex align-items-center gap-2 w-100">
+            <h4
+              className="m-0 text-white modal-title-text"
+              style={{
+                cursor: isOwner ? "pointer" : "default",
+              }}
+              onClick={() => isOwner && setIsEditingTitle(true)}
+            >
+              {task.title}
+            </h4>
+            {isOwner && (
+              <i
+                className="bi bi-trash text-danger"
+                style={{
+                  cursor: "pointer",
+                  fontSize: "1.1rem",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+                title="Delete task"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setIsDeleteTaskModalOpen(true);
+                }}
+              ></i>
+            )}
+          </div>
         )}
       </div>
     </div>
   );
 
   return (
+    <>
     <Modal isOpen={isOpen} onClose={onClose} title={modalTitle} size="lg">
       <div className="row">
         {/* Main Content: Left Column */}
@@ -220,40 +248,44 @@ export default function TaskDetailsModal({
 
           {/* Description */}
           <div className="mb-4">
-            <div className="d-flex align-items-center gap-2 mb-2">
-              <i className="bi bi-justify-left text-secondary modal-header-icon"></i>
-              <h6 className="m-0 fw-bold text-white">Description</h6>
+            <div className="d-flex align-items-center justify-content-between mb-2">
+              <div className="d-flex align-items-center gap-2">
+                <i className="bi bi-justify-left text-secondary modal-header-icon"></i>
+                <h6 className="m-0 fw-bold text-white">Description</h6>
+              </div>
+              {isEditingDesc && isOwner && (
+                <div className="d-flex gap-2">
+                  <Button
+                    size="sm"
+                    variant="primary"
+                    className="fw-bold"
+                    onClick={handleDescBlur}
+                  >
+                    Save
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    onClick={() => {
+                      setIsEditingDesc(false);
+                      setDescription(task.description || "");
+                    }}
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              )}
             </div>
             <div>
               {isEditingDesc && isOwner ? (
                 <div>
                   <Textarea
-                    containerClassName="mb-2"
-                    className="p-3 mb-3 bg-dark text-white border-secondary description-textarea"
+                    containerClassName="mb-0"
+                    className="p-3 bg-dark text-white border-secondary description-textarea"
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
                     autoFocus
                   />
-                  <div className="d-flex gap-2">
-                    <Button
-                      size="sm"
-                      variant="primary"
-                      className="fw-bold"
-                      onClick={handleDescBlur}
-                    >
-                      Save
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="secondary"
-                      onClick={() => {
-                        setIsEditingDesc(false);
-                        setDescription(task.description || "");
-                      }}
-                    >
-                      Cancel
-                    </Button>
-                  </div>
                 </div>
               ) : (
                 <div
@@ -290,5 +322,18 @@ export default function TaskDetailsModal({
         </div>
       </div>
     </Modal>
+    <ConfirmModal
+      isOpen={isDeleteTaskModalOpen}
+      onClose={() => setIsDeleteTaskModalOpen(false)}
+      onConfirm={() => {
+        handleDeleteTask(card._id, task._id);
+        onClose(); // Also close the task details modal
+      }}
+      title="Delete Task"
+      message="Are you sure you want to delete this task? This action cannot be undone."
+      confirmText="Delete Task"
+      isDestructive={true}
+    />
+    </>
   );
 }

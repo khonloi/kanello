@@ -22,27 +22,46 @@ function AppLayout({ userEmail, onLogout }: { userEmail: string; onLogout: () =>
   const [members, setMembers] = useState<User[]>([]);
   const [isOwner, setIsOwner] = useState<boolean>(false);
   const [onDeleteBoard, setOnDeleteBoard] = useState<(() => void) | undefined>(undefined);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   return (
-    <div className="app-layout vh-100 d-flex flex-column overflow-hidden">
-      <Navbar userEmail={userEmail} onLogout={onLogout} />
-      <div className="d-flex flex-grow-1 overflow-hidden">
+    <div className="app-layout vh-100 d-flex flex-column overflow-hidden position-relative">
+      <Navbar 
+        userEmail={userEmail} 
+        onLogout={onLogout} 
+        onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)} 
+      />
+      <div className="d-flex flex-grow-1 overflow-hidden position-relative">
         <Sidebar
           userBoards={userBoards}
           boardId={boardId}
           members={members}
           isOwner={isOwner}
           onDeleteBoard={onDeleteBoard}
+          isOpen={isSidebarOpen}
+          onClose={() => setIsSidebarOpen(false)}
         />
-        <Outlet
-          context={{
-            setUserBoards,
-            setBoardId,
-            setMembers,
-            setIsOwner,
-            setOnDeleteBoard,
-          }}
-        />
+        
+        {/* Mobile Backdrop */}
+        {isSidebarOpen && (
+          <div 
+            className="d-md-none position-absolute top-0 start-0 w-100 h-100 bg-black opacity-50" 
+            style={{ zIndex: 1040 }}
+            onClick={() => setIsSidebarOpen(false)}
+          ></div>
+        )}
+
+        <div className="flex-grow-1 d-flex flex-column overflow-hidden">
+          <Outlet
+            context={{
+              setUserBoards,
+              setBoardId,
+              setMembers,
+              setIsOwner,
+              setOnDeleteBoard,
+            }}
+          />
+        </div>
       </div>
     </div>
   );

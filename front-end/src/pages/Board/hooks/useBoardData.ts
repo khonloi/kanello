@@ -9,11 +9,13 @@ import {
   searchUsers,
   inviteUserToBoard,
   deleteBoard,
+  updateBoard,
   moveTask,
   createCard,
   updateCard,
   deleteCard,
   createTask,
+  deleteTask,
   type Board,
   type Card,
   type Task,
@@ -35,10 +37,21 @@ export const useBoardData = (boardId: string | undefined) => {
   const [inviteError, setInviteError] = useState("");
   const [inviteSuccess, setInviteSuccess] = useState("");
 
+  const [isEditBoardModalOpen, setIsEditBoardModalOpen] = useState(false);
+  const [editBoardName, setEditBoardName] = useState("");
+  const [editBoardDescription, setEditBoardDescription] = useState("");
+
   const [isCreatingList, setIsCreatingList] = useState(false);
   const [newListName, setNewListName] = useState("");
 
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (board) {
+      setEditBoardName(board.name);
+      setEditBoardDescription(board.description || "");
+    }
+  }, [board]);
 
   useEffect(() => {
     // Decode token to get userId
@@ -144,19 +157,26 @@ export const useBoardData = (boardId: string | undefined) => {
 
   const handleDeleteBoard = useCallback(async () => {
     if (!boardId) return;
-    if (
-      window.confirm(
-        "Are you sure you want to close this board? This action cannot be undone.",
-      )
-    ) {
-      try {
-        await deleteBoard(boardId);
-        navigate("/");
-      } catch (err: any) {
-        alert(err.message || "Failed to delete board.");
-      }
+    try {
+      await deleteBoard(boardId);
+      navigate("/");
+    } catch (err: any) {
+      alert(err.message || "Failed to delete board.");
     }
   }, [boardId, navigate]);
+
+  const handleUpdateBoard = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!boardId || !editBoardName.trim()) return;
+    try {
+      const updated = await updateBoard(boardId, editBoardName.trim(), editBoardDescription.trim());
+      setBoard(updated);
+      setIsEditBoardModalOpen(false);
+      fetchBoardData();
+    } catch (err: any) {
+      alert(err.message || "Failed to update board.");
+    }
+  };
 
   const handleCreateList = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -202,6 +222,17 @@ export const useBoardData = (boardId: string | undefined) => {
     }
   };
 
+  const handleDeleteTask = async (cardId: string, taskId: string) => {
+    if (!boardId) return;
+    try {
+      await deleteTask(boardId, cardId, taskId);
+      setSelectedTask(null);
+      fetchBoardData();
+    } catch (err: any) {
+      alert(err.message || "Failed to delete task.");
+    }
+  };
+
   return {
     board,
     userBoards,
@@ -216,6 +247,12 @@ export const useBoardData = (boardId: string | undefined) => {
     setInviteEmail,
     inviteError,
     inviteSuccess,
+    isEditBoardModalOpen,
+    setIsEditBoardModalOpen,
+    editBoardName,
+    setEditBoardName,
+    editBoardDescription,
+    setEditBoardDescription,
     isCreatingList,
     setIsCreatingList,
     newListName,
@@ -225,9 +262,11 @@ export const useBoardData = (boardId: string | undefined) => {
     handleDropTask,
     handleInvite,
     handleDeleteBoard,
+    handleUpdateBoard,
     handleCreateList,
     handleUpdateCard,
     handleDeleteCard,
     handleCreateTask,
+    handleDeleteTask,
   };
 };

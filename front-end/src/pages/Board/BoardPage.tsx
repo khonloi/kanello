@@ -9,6 +9,7 @@ import { useBoardData } from "./hooks/useBoardData";
 import { BoardContext } from "./context/BoardContext";
 import Button from "../../components/ui/Button/Button";
 import Input from "../../components/ui/Input/Input";
+import Textarea from "../../components/ui/Textarea/Textarea";
 import { useEffect } from "react";
 import type { LayoutContextType } from "../../App";
 import "./BoardPage.css";
@@ -30,6 +31,12 @@ export default function BoardPage() {
     setInviteEmail,
     inviteError,
     inviteSuccess,
+    isEditBoardModalOpen,
+    setIsEditBoardModalOpen,
+    editBoardName,
+    setEditBoardName,
+    editBoardDescription,
+    setEditBoardDescription,
     isCreatingList,
     setIsCreatingList,
     newListName,
@@ -37,6 +44,7 @@ export default function BoardPage() {
     currentUserId,
     handleInvite,
     handleDeleteBoard,
+    handleUpdateBoard,
     handleCreateList,
   } = boardData;
 
@@ -80,7 +88,13 @@ export default function BoardPage() {
         <main className="board-content d-flex flex-column flex-grow-1 overflow-hidden h-100">
           {/* Secondary Header */}
           <header className="board-header d-flex align-items-center justify-content-between text-white">
-            <h2 className="board-title m-0 text-white">{board.name}</h2>
+            <h2 
+              className={`board-title m-0 text-white${isOwner ? " clickable" : ""}`}
+              onClick={isOwner ? () => setIsEditBoardModalOpen(true) : undefined}
+              title={isOwner ? "Click to edit board name or description" : undefined}
+            >
+              {board.name}
+            </h2>
             {isOwner && (
               <Button
                 variant="ghost"
@@ -95,7 +109,7 @@ export default function BoardPage() {
           {/* Kanban Canvas */}
           <Grid
             className="board-canvas flex-grow-1 d-flex overflow-x-auto align-items-start align-content-start"
-            wrap={true}
+            wrap={false}
             gap={3}
           >
             {cards.map((card) => (
@@ -178,6 +192,42 @@ export default function BoardPage() {
               disabled={!inviteEmail.trim()}
             >
               Send Invitation
+            </Button>
+          </form>
+        </Modal>
+
+        {/* Edit Board Modal */}
+        <Modal
+          isOpen={isEditBoardModalOpen}
+          onClose={() => setIsEditBoardModalOpen(false)}
+          title="Edit Board"
+        >
+          <form onSubmit={handleUpdateBoard}>
+            <Input
+              containerClassName="mb-3"
+              label="Board Name"
+              type="text"
+              value={editBoardName}
+              onChange={(e) => setEditBoardName(e.target.value)}
+              required
+              placeholder="Board Name"
+            />
+            <Textarea
+              containerClassName="mb-3"
+              label="Board Description"
+              value={editBoardDescription}
+              onChange={(e) => setEditBoardDescription(e.target.value)}
+              placeholder="Board Description"
+              rows={4}
+            />
+            <Button
+              type="submit"
+              variant="primary"
+              fullWidth
+              className="fw-bold"
+              disabled={!editBoardName.trim()}
+            >
+              Update Board
             </Button>
           </form>
         </Modal>

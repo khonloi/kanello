@@ -7,6 +7,7 @@ import Button from "../../../components/ui/Button/Button";
 import Input from "../../../components/ui/Input/Input";
 import Textarea from "../../../components/ui/Textarea/Textarea";
 import CardDetailsModal from "./CardDetailsModal";
+import ConfirmModal from "../../../components/ui/Modal/ConfirmModal";
 import { useBoardContext } from "../context/BoardContext";
 
 interface CardItemProps {
@@ -33,6 +34,7 @@ const CardItem = ({ card }: CardItemProps) => {
   const [newTaskTitle, setNewTaskTitle] = useState("");
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
+  const [isDeleteListModalOpen, setIsDeleteListModalOpen] = useState(false);
 
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -152,13 +154,7 @@ const CardItem = ({ card }: CardItemProps) => {
                     className="dropdown-item text-danger bg-dark d-flex align-items-center gap-2 py-2 card-dropdown-item"
                     onClick={() => {
                       setIsMenuOpen(false);
-                      if (
-                        window.confirm(
-                          "Are you sure you want to delete this list?",
-                        )
-                      ) {
-                        onDeleteCard(card._id);
-                      }
+                      setIsDeleteListModalOpen(true);
                     }}
                   >
                     <i className="bi bi-trash small"></i>
@@ -234,6 +230,15 @@ const CardItem = ({ card }: CardItemProps) => {
           card={card}
         />
       )}
+      <ConfirmModal
+        isOpen={isDeleteListModalOpen}
+        onClose={() => setIsDeleteListModalOpen(false)}
+        onConfirm={() => onDeleteCard(card._id)}
+        title="Delete List"
+        message="Are you sure you want to delete this list? All tasks inside will be lost."
+        confirmText="Delete List"
+        isDestructive={true}
+      />
     </>
   );
 };

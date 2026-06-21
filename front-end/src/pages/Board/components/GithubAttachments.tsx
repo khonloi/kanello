@@ -249,14 +249,18 @@ export default function GithubAttachments({
                 </span>
               </div>
               {isOwner && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="text-danger p-1 border-0"
+                <i
+                  className="bi bi-trash text-danger"
+                  style={{
+                    cursor: "pointer",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    padding: "4px",
+                  }}
                   onClick={() => handleRemove(att._id || att.attachmentId!)}
-                >
-                  <i className="bi bi-trash"></i>
-                </Button>
+                  title="Remove attachment"
+                ></i>
               )}
             </div>
           ))}
