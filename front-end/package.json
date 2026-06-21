@@ -50,6 +50,7 @@
     "fdir": "^6.5.0",
     "file-entry-cache": "^8.0.0",
     "find-up": "^5.0.0",
+    "firebase": "^12.15.0",
     "flat-cache": "^4.0.1",
     "flatted": "^3.4.2",
     "gensync": "^1.0.0-beta.2",

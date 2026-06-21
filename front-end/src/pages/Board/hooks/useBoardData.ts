@@ -46,7 +46,7 @@ export const useBoardData = (boardId: string | undefined) => {
     if (token) {
       try {
         const payload = JSON.parse(atob(token.split(".")[1]));
-        setCurrentUserId(payload.userId);
+        setCurrentUserId(payload.user_id || payload.sub || payload.userId);
       } catch (e) {
         console.error("Failed to parse token", e);
       }

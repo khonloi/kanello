@@ -1,8 +1,7 @@
 var express = require("express");
 var router = express.Router({ mergeParams: true });
+const { db } = require("../utils/firebase");
 
-const Card = require("../models/Card");
-const Board = require("../models/Board");
 const tasksRouter = require("./tasks");
 
 // Nest task routes under cards
@@ -12,22 +11,21 @@ router.use("/:cardId/tasks", tasksRouter);
 router.get("/", async function (req, res, next) {
   try {
     const { boardId } = req.params;
-    const board = await Board.findById(boardId);
-    if (!board) {
+    const boardDoc = await db.collection("boards").doc(boardId).get();
+    if (!boardDoc.exists) {
       return res.status(404).json({ error: "Board not found" });
     }
     
-    const isOwner = board.userId.toString() === req.user._id.toString();
-    const isBoardMember = board.list_member && board.list_member.some(m => {
-      const mId = m._id ? m._id.toString() : m.toString();
-      return mId === req.user._id.toString();
-    });
+    const board = boardDoc.data();
+    const isOwner = board.userId === req.user._id;
+    const isBoardMember = (board.list_member || []).includes(req.user._id);
 
     if (!isOwner && !isBoardMember) {
       return res.status(404).json({ error: "Board not found" });
     }
 
-    const cards = await Card.find({ boardId });
+    const cardsSnap = await db.collection("cards").where("boardId", "==", boardId).get();
+    const cards = cardsSnap.docs.map(doc => ({ _id: doc.id, ...doc.data() }));
     res.json(cards);
   } catch (err) {
     next(err);
@@ -38,11 +36,15 @@ router.get("/", async function (req, res, next) {
 router.get("/user/:user_id", async function (req, res, next) {
   try {
     const { boardId, user_id } = req.params;
-    const board = await Board.findOne({ _id: boardId, userId: req.user._id });
-    if (!board) {
+    const boardDoc = await db.collection("boards").doc(boardId).get();
+    if (!boardDoc.exists || boardDoc.data().userId !== req.user._id) {
       return res.status(404).json({ error: "Board not found" });
     }
-    const cards = await Card.find({ boardId, list_member: user_id });
+    const cardsSnap = await db.collection("cards")
+      .where("boardId", "==", boardId)
+      .where("list_member", "array-contains", user_id)
+      .get();
+    const cards = cardsSnap.docs.map(doc => ({ _id: doc.id, ...doc.data() }));
     res.json(cards);
   } catch (err) {
     next(err);
@@ -53,25 +55,24 @@ router.get("/user/:user_id", async function (req, res, next) {
 router.get("/:id", async function (req, res, next) {
   try {
     const { boardId, id } = req.params;
-    const board = await Board.findById(boardId);
-    if (!board) {
+    const boardDoc = await db.collection("boards").doc(boardId).get();
+    if (!boardDoc.exists) {
       return res.status(404).json({ error: "Board not found" });
     }
-    const card = await Card.findOne({ _id: id, boardId });
-    if (!card) {
+    const board = boardDoc.data();
+    
+    const cardDoc = await db.collection("cards").doc(id).get();
+    if (!cardDoc.exists || cardDoc.data().boardId !== boardId) {
       return res.status(404).json({ error: "Card not found" });
     }
 
-    const isOwner = board.userId.toString() === req.user._id.toString();
-    const isBoardMember = board.list_member && board.list_member.some(m => {
-      const mId = m._id ? m._id.toString() : m.toString();
-      return mId === req.user._id.toString();
-    });
+    const isOwner = board.userId === req.user._id;
+    const isBoardMember = (board.list_member || []).includes(req.user._id);
 
     if (!isOwner && !isBoardMember) {
       return res.status(404).json({ error: "Card not found" });
     }
-    res.json(card);
+    res.json({ _id: cardDoc.id, ...cardDoc.data() });
   } catch (err) {
     next(err);
   }
@@ -81,14 +82,23 @@ router.get("/:id", async function (req, res, next) {
 router.post("/", async function (req, res, next) {
   try {
     const { boardId } = req.params;
-    const board = await Board.findOne({ _id: boardId, userId: req.user._id });
-    if (!board) {
+    const boardDoc = await db.collection("boards").doc(boardId).get();
+    if (!boardDoc.exists || boardDoc.data().userId !== req.user._id) {
       return res.status(404).json({ error: "Board not found" });
     }
     const { name, description } = req.body;
-    const card = new Card({ name, description, boardId });
-    await card.save();
-    res.status(201).json(card);
+    
+    const cardRef = db.collection("cards").doc();
+    const cardData = {
+      name,
+      description,
+      boardId,
+      list_member: [],
+      task_count: 0,
+      createdAt: new Date()
+    };
+    await cardRef.set(cardData);
+    res.status(201).json({ _id: cardRef.id, ...cardData });
   } catch (err) {
     next(err);
   }
@@ -98,25 +108,29 @@ router.post("/", async function (req, res, next) {
 router.put("/:id", async function (req, res, next) {
   try {
     const { boardId, id } = req.params;
-    const board = await Board.findById(boardId);
-    if (!board) {
+    const boardDoc = await db.collection("boards").doc(boardId).get();
+    if (!boardDoc.exists) {
       return res.status(404).json({ error: "Board not found" });
     }
-    const card = await Card.findOne({ _id: id, boardId });
-    if (!card) {
+    const cardRef = db.collection("cards").doc(id);
+    const cardDoc = await cardRef.get();
+    if (!cardDoc.exists || cardDoc.data().boardId !== boardId) {
       return res.status(404).json({ error: "Card not found" });
     }
 
-    const isOwner = board.userId.toString() === req.user._id.toString();
-    if (!isOwner) {
+    if (boardDoc.data().userId !== req.user._id) {
       return res.status(403).json({ error: "Access denied" });
     }
 
     const { name, description } = req.body;
-    if (name !== undefined) card.name = name;
-    if (description !== undefined) card.description = description;
-    await card.save();
-    res.json(card);
+    const updates = {};
+    if (name !== undefined) updates.name = name;
+    if (description !== undefined) updates.description = description;
+    
+    if (Object.keys(updates).length > 0) {
+      await cardRef.update(updates);
+    }
+    res.json({ _id: cardRef.id, ...cardDoc.data(), ...updates });
   } catch (err) {
     next(err);
   }
@@ -126,29 +140,33 @@ router.put("/:id", async function (req, res, next) {
 router.delete("/:id", async function (req, res, next) {
   try {
     const { boardId, id } = req.params;
-    const board = await Board.findById(boardId);
-    if (!board) {
+    const boardDoc = await db.collection("boards").doc(boardId).get();
+    if (!boardDoc.exists) {
       return res.status(404).json({ error: "Board not found" });
     }
-    const card = await Card.findOne({ _id: id, boardId });
-    if (!card) {
+    const cardRef = db.collection("cards").doc(id);
+    const cardDoc = await cardRef.get();
+    if (!cardDoc.exists || cardDoc.data().boardId !== boardId) {
       return res.status(404).json({ error: "Card not found" });
     }
 
-    const isOwner = board.userId.toString() === req.user._id.toString();
-    if (!isOwner) {
+    if (boardDoc.data().userId !== req.user._id) {
       return res.status(403).json({ error: "Access denied" });
     }
 
     // Delete all tasks for this card
-    const Task = require("../models/Task");
-    await Task.deleteMany({ cardId: id });
+    const tasksSnap = await db.collection("tasks").where("cardId", "==", id).get();
+    const batch = db.batch();
+    tasksSnap.docs.forEach(tDoc => batch.delete(tDoc.ref));
+    await batch.commit();
 
     // Delete all invitations for this card
-    const Invitation = require("../models/Invitation");
-    await Invitation.deleteMany({ cardId: id });
+    const invSnap = await db.collection("invitations").where("cardId", "==", id).get();
+    const batchInv = db.batch();
+    invSnap.docs.forEach(iDoc => batchInv.delete(iDoc.ref));
+    await batchInv.commit();
 
-    await Card.deleteOne({ _id: id, boardId });
+    await cardRef.delete();
     res.json({ message: "Card successfully deleted along with tasks and invitations" });
   } catch (err) {
     next(err);
@@ -159,50 +177,51 @@ router.delete("/:id", async function (req, res, next) {
 router.post("/:id/invite", async function (req, res, next) {
   try {
     const { boardId, id } = req.params;
-    const board = await Board.findOne({ _id: boardId, userId: req.user._id });
-    if (!board) {
+    const boardDoc = await db.collection("boards").doc(boardId).get();
+    if (!boardDoc.exists || boardDoc.data().userId !== req.user._id) {
       return res.status(404).json({ error: "Board not found" });
     }
-    const card = await Card.findOne({ _id: id, boardId });
-    if (!card) {
+    const cardDoc = await db.collection("cards").doc(id).get();
+    if (!cardDoc.exists || cardDoc.data().boardId !== boardId) {
       return res.status(404).json({ error: "Card not found" });
     }
 
     const { member_id, email_member } = req.body;
+    if (!member_id) {
+      return res.status(400).json({ error: "member_id is required" });
+    }
 
-    // Check if the user exists
-    const User = require("../models/User");
-    const targetUser = await User.findById(member_id);
-    if (!targetUser) {
+    const targetUserDoc = await db.collection("users").doc(member_id).get();
+    if (!targetUserDoc.exists) {
       return res.status(404).json({ error: "User to invite not found" });
     }
 
-    // Check if user is already a member
-    if (card.list_member.includes(member_id)) {
+    if ((cardDoc.data().list_member || []).includes(member_id)) {
       return res.status(400).json({ error: "User is already a member of this card" });
     }
 
-    // Check for existing pending or accepted invitation
-    const Invitation = require("../models/Invitation");
-    const existingInvite = await Invitation.findOne({
-      cardId: id,
-      member_id,
-      status: { $in: ["pending", "accepted"] }
-    });
-    if (existingInvite) {
+    const existingInvites = await db.collection("invitations")
+      .where("cardId", "==", id)
+      .where("member_id", "==", member_id)
+      .where("status", "in", ["pending", "accepted"])
+      .get();
+      
+    if (!existingInvites.empty) {
       return res.status(400).json({ error: "User already invited or is already a member" });
     }
 
-    const invitation = new Invitation({
+    const invitationRef = db.collection("invitations").doc();
+    const invitationData = {
       boardId,
       cardId: id,
       board_owner_id: req.user._id,
       member_id,
       email_member,
       status: "pending",
-    });
-    await invitation.save();
-    res.status(201).json(invitation);
+      createdAt: new Date()
+    };
+    await invitationRef.set(invitationData);
+    res.status(201).json({ _id: invitationRef.id, ...invitationData });
   } catch (err) {
     next(err);
   }
@@ -212,24 +231,27 @@ router.post("/:id/invite", async function (req, res, next) {
 router.post("/:id/invite/accept", async function (req, res, next) {
   try {
     const { boardId, id } = req.params;
-    const Invitation = require("../models/Invitation");
-    const invitation = await Invitation.findOne({
-      cardId: id,
-      boardId,
-      member_id: req.user._id,
-      status: "pending",
-    });
-    if (!invitation) {
+    const invitesSnap = await db.collection("invitations")
+      .where("cardId", "==", id)
+      .where("boardId", "==", boardId)
+      .where("member_id", "==", req.user._id)
+      .where("status", "==", "pending")
+      .limit(1)
+      .get();
+
+    if (invitesSnap.empty) {
       return res.status(404).json({ error: "Invitation not found" });
     }
-    invitation.status = "accepted";
-    await invitation.save();
+    const inviteDoc = invitesSnap.docs[0];
+    await inviteDoc.ref.update({ status: "accepted" });
 
-    await Card.findByIdAndUpdate(id, {
-      $addToSet: { list_member: req.user._id },
+    const cardRef = db.collection("cards").doc(id);
+    const { FieldValue } = require("firebase-admin/firestore");
+    await cardRef.update({
+      list_member: FieldValue.arrayUnion(req.user._id)
     });
 
-    res.json({ message: "Invitation accepted successfully", invitation });
+    res.json({ message: "Invitation accepted successfully", invitation: { _id: inviteDoc.id, ...inviteDoc.data(), status: "accepted" } });
   } catch (err) {
     next(err);
   }
@@ -239,20 +261,21 @@ router.post("/:id/invite/accept", async function (req, res, next) {
 router.post("/:id/invite/decline", async function (req, res, next) {
   try {
     const { boardId, id } = req.params;
-    const Invitation = require("../models/Invitation");
-    const invitation = await Invitation.findOne({
-      cardId: id,
-      boardId,
-      member_id: req.user._id,
-      status: "pending",
-    });
-    if (!invitation) {
+    const invitesSnap = await db.collection("invitations")
+      .where("cardId", "==", id)
+      .where("boardId", "==", boardId)
+      .where("member_id", "==", req.user._id)
+      .where("status", "==", "pending")
+      .limit(1)
+      .get();
+
+    if (invitesSnap.empty) {
       return res.status(404).json({ error: "Invitation not found" });
     }
-    invitation.status = "declined";
-    await invitation.save();
+    const inviteDoc = invitesSnap.docs[0];
+    await inviteDoc.ref.update({ status: "declined" });
 
-    res.json({ message: "Invitation declined successfully", invitation });
+    res.json({ message: "Invitation declined successfully", invitation: { _id: inviteDoc.id, ...inviteDoc.data(), status: "declined" } });
   } catch (err) {
     next(err);
   }

@@ -1,7 +1,6 @@
 const express = require("express");
 const router = express.Router();
 const axios = require("axios");
-const User = require("../models/User");
 
 // Support :owner/:repo format which is easier to work with than a single URL-encoded parameter
 router.get("/:owner/:repo/github-info", async (req, res, next) => {

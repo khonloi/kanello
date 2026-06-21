@@ -3,7 +3,9 @@ import { useAuthForm } from "./hooks/useAuthForm";
 import logo from "../../assets/logo.png";
 import Button from "../../components/ui/Button/Button";
 import Input from "../../components/ui/Input/Input";
-import { getGithubAuthUrl } from "../../api/auth";
+import { auth } from "../../firebase";
+import { GithubAuthProvider, signInWithPopup } from "firebase/auth";
+import { apiFetch } from "../../api/client";
 
 interface AuthPageProps {
   onLoginSuccess: (email: string, token: string) => void;
@@ -14,8 +16,6 @@ export default function AuthPage({ onLoginSuccess }: AuthPageProps) {
     step,
     email,
     setEmail,
-    code,
-    setCode,
     loading,
     error,
     success,
@@ -24,10 +24,27 @@ export default function AuthPage({ onLoginSuccess }: AuthPageProps) {
 
   const handleGithubLogin = async () => {
     try {
-      const { url } = await getGithubAuthUrl();
-      window.location.href = url;
-    } catch (err) {
-      alert("Failed to initialize GitHub Login");
+      const provider = new GithubAuthProvider();
+      provider.addScope('repo'); 
+      const result = await signInWithPopup(auth, provider);
+      
+      const credential = GithubAuthProvider.credentialFromResult(result);
+      const token = await result.user.getIdToken();
+      
+      // Save githubAccessToken to database via Express backend
+      if (credential?.accessToken) {
+        localStorage.setItem("token", token);
+        await apiFetch("/auth/github-token", {
+          method: "POST",
+          body: JSON.stringify({
+            githubAccessToken: credential.accessToken,
+          }),
+        });
+      }
+      
+      onLoginSuccess(result.user.email || "", token);
+    } catch (err: any) {
+      alert("Failed to login with GitHub: " + err.message);
     }
   };
 
@@ -35,22 +52,19 @@ export default function AuthPage({ onLoginSuccess }: AuthPageProps) {
     <div className="auth-container-wrapper min-vh-100 d-flex align-items-center justify-content-center p-3">
       <div className="card auth-flat-card border-0 text-center">
         {step === 1 ? (
-          /* STEP 1: Email Form */
           <>
             <div className="d-flex justify-content-center mb-2">
               <img src={logo} alt="Kanello Logo" width="54" height="54" />
             </div>
-
             <p className="auth-title-step1 mb-2 mt-2">Log in to continue</p>
           </>
         ) : (
-          /* STEP 2: Verification Form */
           <>
             <h2 className="auth-title-step2 fw-bold mb-3 mt-2">
-              Email Verification
+              Check your email
             </h2>
             <p className="auth-subtitle-step2 mb-2">
-              Please enter your code that send to your email address
+              We've sent a magic link to {email}. Click the link to log in.
             </p>
           </>
         )}
@@ -76,8 +90,8 @@ export default function AuthPage({ onLoginSuccess }: AuthPageProps) {
         )}
 
         {/* Main Auth Form */}
-        <form onSubmit={handleSubmit} noValidate>
-          {step === 1 ? (
+        {step === 1 && (
+          <form onSubmit={handleSubmit} noValidate>
             <div className="mb-2">
               <Input
                 type="email"
@@ -90,37 +104,22 @@ export default function AuthPage({ onLoginSuccess }: AuthPageProps) {
                 required
               />
             </div>
-          ) : (
-            <div className="mb-2">
-              <Input
-                type="text"
-                variant="none"
-                className="auth-input-field text-center"
-                placeholder="Enter code verification"
-                value={code}
-                onChange={(e) => setCode(e.target.value)}
-                maxLength={6}
-                disabled={loading}
-                required
-              />
+
+            <div>
+              <Button
+                type="submit"
+                variant="primary"
+                fullWidth
+                className="auth-submit-btn border-0 fw-medium"
+                isLoading={loading}
+              >
+                {loading ? "Please wait..." : "Continue"}
+              </Button>
             </div>
-          )}
+          </form>
+        )}
 
-          {/* Action button */}
-          <div>
-            <Button
-              type="submit"
-              variant="primary"
-              fullWidth
-              className="auth-submit-btn border-0 fw-medium"
-              isLoading={loading}
-            >
-              {loading ? "Please wait..." : step === 1 ? "Continue" : "Submit"}
-            </Button>
-          </div>
-        </form>
-
-        <div className="d-flex align-items-center my-1">
+        <div className="d-flex align-items-center my-3">
           <hr className="flex-grow-1" />
           <span className="mx-2 text-muted small">OR</span>
           <hr className="flex-grow-1" />

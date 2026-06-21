@@ -1,8 +1,7 @@
 var express = require("express");
 var router = express.Router();
+const { db } = require("../utils/firebase");
 
-const Board = require("../models/Board");
-const Card = require("../models/Card");
 const cardsRouter = require("./cards");
 
 /* Nest card routes under boards */
@@ -11,10 +10,17 @@ router.use("/:boardId/cards", cardsRouter);
 /* Retrieve All Boards */
 router.get("/", async function (req, res, next) {
   try {
-    const boards = await Board.find({
-      $or: [{ userId: req.user._id }, { list_member: req.user._id }],
-    });
-    res.json(boards);
+    const userId = req.user._id;
+    // Run two queries and merge to simulate $or
+    const ownedBoardsSnap = await db.collection("boards").where("userId", "==", userId).get();
+    const memberBoardsSnap = await db.collection("boards").where("list_member", "array-contains", userId).get();
+
+    const boardsMap = new Map();
+    
+    ownedBoardsSnap.forEach(doc => boardsMap.set(doc.id, { _id: doc.id, ...doc.data() }));
+    memberBoardsSnap.forEach(doc => boardsMap.set(doc.id, { _id: doc.id, ...doc.data() }));
+
+    res.json(Array.from(boardsMap.values()));
   } catch (err) {
     next(err);
   }
@@ -23,14 +29,15 @@ router.get("/", async function (req, res, next) {
 /* Retrieve Board Details */
 router.get("/:id", async function (req, res, next) {
   try {
-    const board = await Board.findOne({
-      _id: req.params.id,
-      $or: [{ userId: req.user._id }, { list_member: req.user._id }],
-    });
-    if (!board) {
+    const doc = await db.collection("boards").doc(req.params.id).get();
+    if (!doc.exists) {
       return res.status(404).json({ error: "Board not found" });
     }
-    res.json(board);
+    const data = doc.data();
+    if (data.userId !== req.user._id && !(data.list_member || []).includes(req.user._id)) {
+       return res.status(404).json({ error: "Board not found" });
+    }
+    res.json({ _id: doc.id, ...data });
   } catch (err) {
     next(err);
   }
@@ -39,14 +46,26 @@ router.get("/:id", async function (req, res, next) {
 /* Retrieve All Members of a Board */
 router.get("/:id/members", async function (req, res, next) {
   try {
-    const board = await Board.findOne({
-      _id: req.params.id,
-      $or: [{ userId: req.user._id }, { list_member: req.user._id }],
-    }).populate("list_member", "_id email");
-    if (!board) {
+    const doc = await db.collection("boards").doc(req.params.id).get();
+    if (!doc.exists) {
       return res.status(404).json({ error: "Board not found" });
     }
-    res.json(board.list_member || []);
+    const data = doc.data();
+    if (data.userId !== req.user._id && !(data.list_member || []).includes(req.user._id)) {
+      return res.status(404).json({ error: "Board not found" });
+    }
+
+    const memberIds = data.list_member || [];
+    if (memberIds.length === 0) return res.json([]);
+
+    const members = [];
+    for (const mId of memberIds) {
+      const mDoc = await db.collection("users").doc(mId).get();
+      if (mDoc.exists) {
+        members.push({ _id: mDoc.id, email: mDoc.data().email });
+      }
+    }
+    res.json(members);
   } catch (err) {
     next(err);
   }
@@ -56,12 +75,13 @@ router.get("/:id/members", async function (req, res, next) {
 router.post("/:id/invite", async function (req, res, next) {
   try {
     const boardId = req.params.id;
-    const board = await Board.findById(boardId);
-    if (!board) {
+    const boardDoc = await db.collection("boards").doc(boardId).get();
+    if (!boardDoc.exists) {
       return res.status(404).json({ error: "Board not found" });
     }
+    const board = boardDoc.data();
 
-    if (board.userId.toString() !== req.user._id.toString()) {
+    if (board.userId !== req.user._id) {
       return res.status(403).json({ error: "Only the board owner can invite members" });
     }
 
@@ -70,38 +90,37 @@ router.post("/:id/invite", async function (req, res, next) {
       return res.status(400).json({ error: "member_id is required" });
     }
 
-    // Check if user exists
-    const User = require("../models/User");
-    const targetUser = await User.findById(member_id);
-    if (!targetUser) {
+    const targetUserDoc = await db.collection("users").doc(member_id).get();
+    if (!targetUserDoc.exists) {
       return res.status(404).json({ error: "User to invite not found" });
     }
 
-    // Check if user is already a member
-    if (board.list_member.includes(member_id)) {
+    if ((board.list_member || []).includes(member_id)) {
       return res.status(400).json({ error: "User is already a member of this board" });
     }
 
-    // Check for existing pending or accepted invitation
-    const Invitation = require("../models/Invitation");
-    const existingInvite = await Invitation.findOne({
-      boardId,
-      member_id,
-      status: { $in: ["pending", "accepted"] }
-    });
-    if (existingInvite) {
+    const existingInvites = await db.collection("invitations")
+      .where("boardId", "==", boardId)
+      .where("member_id", "==", member_id)
+      .where("status", "in", ["pending", "accepted"])
+      .get();
+
+    if (!existingInvites.empty) {
       return res.status(400).json({ error: "User already invited or is already a member" });
     }
 
-    const invitation = new Invitation({
+    const invitationRef = db.collection("invitations").doc();
+    const invitationData = {
       boardId,
       board_owner_id: req.user._id,
       member_id,
       email_member,
       status: "pending",
-    });
-    await invitation.save();
-    res.status(201).json(invitation);
+      createdAt: new Date()
+    };
+    await invitationRef.set(invitationData);
+    
+    res.status(201).json({ _id: invitationRef.id, ...invitationData });
   } catch (err) {
     next(err);
   }
@@ -111,24 +130,28 @@ router.post("/:id/invite", async function (req, res, next) {
 router.post("/:id/invite/accept", async function (req, res, next) {
   try {
     const boardId = req.params.id;
-    const Invitation = require("../models/Invitation");
-    const invitation = await Invitation.findOne({
-      boardId,
-      member_id: req.user._id,
-      status: "pending",
-    });
-    if (!invitation) {
+    
+    const invitesSnap = await db.collection("invitations")
+      .where("boardId", "==", boardId)
+      .where("member_id", "==", req.user._id)
+      .where("status", "==", "pending")
+      .limit(1)
+      .get();
+
+    if (invitesSnap.empty) {
       return res.status(404).json({ error: "Invitation not found" });
     }
 
-    invitation.status = "accepted";
-    await invitation.save();
+    const inviteDoc = invitesSnap.docs[0];
+    await inviteDoc.ref.update({ status: "accepted" });
 
-    await Board.findByIdAndUpdate(boardId, {
-      $addToSet: { list_member: req.user._id },
+    const boardRef = db.collection("boards").doc(boardId);
+    const { FieldValue } = require("firebase-admin/firestore");
+    await boardRef.update({
+      list_member: FieldValue.arrayUnion(req.user._id)
     });
 
-    res.json({ message: "Invitation accepted successfully", invitation });
+    res.json({ message: "Invitation accepted successfully", invitation: { _id: inviteDoc.id, ...inviteDoc.data(), status: "accepted" } });
   } catch (err) {
     next(err);
   }
@@ -138,20 +161,22 @@ router.post("/:id/invite/accept", async function (req, res, next) {
 router.post("/:id/invite/decline", async function (req, res, next) {
   try {
     const boardId = req.params.id;
-    const Invitation = require("../models/Invitation");
-    const invitation = await Invitation.findOne({
-      boardId,
-      member_id: req.user._id,
-      status: "pending",
-    });
-    if (!invitation) {
+    
+    const invitesSnap = await db.collection("invitations")
+      .where("boardId", "==", boardId)
+      .where("member_id", "==", req.user._id)
+      .where("status", "==", "pending")
+      .limit(1)
+      .get();
+
+    if (invitesSnap.empty) {
       return res.status(404).json({ error: "Invitation not found" });
     }
 
-    invitation.status = "declined";
-    await invitation.save();
+    const inviteDoc = invitesSnap.docs[0];
+    await inviteDoc.ref.update({ status: "declined" });
 
-    res.json({ message: "Invitation declined successfully", invitation });
+    res.json({ message: "Invitation declined successfully", invitation: { _id: inviteDoc.id, ...inviteDoc.data(), status: "declined" } });
   } catch (err) {
     next(err);
   }
@@ -161,9 +186,16 @@ router.post("/:id/invite/decline", async function (req, res, next) {
 router.post("/", async function (req, res, next) {
   try {
     const { name, description } = req.body;
-    const board = new Board({ name, description, userId: req.user._id });
-    await board.save();
-    res.status(201).json(board);
+    const boardRef = db.collection("boards").doc();
+    const boardData = {
+      name,
+      description,
+      userId: req.user._id,
+      list_member: [],
+      createdAt: new Date()
+    };
+    await boardRef.set(boardData);
+    res.status(201).json({ _id: boardRef.id, ...boardData });
   } catch (err) {
     next(err);
   }
@@ -173,15 +205,14 @@ router.post("/", async function (req, res, next) {
 router.put("/:id", async function (req, res, next) {
   try {
     const { name, description } = req.body;
-    const board = await Board.findOneAndUpdate(
-      { _id: req.params.id, userId: req.user._id },
-      { name, description },
-      { new: true },
-    );
-    if (!board) {
-      return res.status(404).json({ error: "Board not found" });
+    const boardRef = db.collection("boards").doc(req.params.id);
+    const doc = await boardRef.get();
+    if (!doc.exists || doc.data().userId !== req.user._id) {
+       return res.status(404).json({ error: "Board not found" });
     }
-    res.json(board);
+    await boardRef.update({ name, description });
+    
+    res.json({ _id: boardRef.id, ...doc.data(), name, description });
   } catch (err) {
     next(err);
   }
@@ -191,32 +222,46 @@ router.put("/:id", async function (req, res, next) {
 router.delete("/:id", async function (req, res, next) {
   try {
     const boardId = req.params.id;
-    const board = await Board.findOne({ _id: boardId, userId: req.user._id });
-    if (!board) {
+    const boardRef = db.collection("boards").doc(boardId);
+    const doc = await boardRef.get();
+    if (!doc.exists || doc.data().userId !== req.user._id) {
       return res.status(404).json({ error: "Board not found" });
     }
 
     // Find all cards on this board
-    const cards = await Card.find({ boardId });
-    const cardIds = cards.map((c) => c._id);
+    const cardsSnap = await db.collection("cards").where("boardId", "==", boardId).get();
+    const cardIds = cardsSnap.docs.map(c => c.id);
 
-    // Delete all tasks for these cards
-    const Task = require("../models/Task");
-    await Task.deleteMany({ cardId: { $in: cardIds } });
+    if (cardIds.length > 0) {
+      for (let i = 0; i < cardIds.length; i += 10) {
+        const chunk = cardIds.slice(i, i + 10);
+        const tasksSnap = await db.collection("tasks").where("cardId", "in", chunk).get();
+        const batch = db.batch();
+        tasksSnap.docs.forEach(tDoc => batch.delete(tDoc.ref));
+        await batch.commit();
+      }
+    }
 
     // Delete all invitations for this board
-    const Invitation = require("../models/Invitation");
-    await Invitation.deleteMany({ boardId });
+    const invSnap = await db.collection("invitations").where("boardId", "==", boardId).get();
+    if (!invSnap.empty) {
+      const batchInv = db.batch();
+      invSnap.docs.forEach(iDoc => batchInv.delete(iDoc.ref));
+      await batchInv.commit();
+    }
 
     // Delete all cards
-    await Card.deleteMany({ boardId });
+    if (!cardsSnap.empty) {
+      const batchCards = db.batch();
+      cardsSnap.docs.forEach(cDoc => batchCards.delete(cDoc.ref));
+      await batchCards.commit();
+    }
 
     // Delete the board
-    await Board.deleteOne({ _id: boardId });
+    await boardRef.delete();
 
     res.json({
-      message:
-        "Board successfully deleted along with all cards, tasks, and invitations",
+      message: "Board successfully deleted along with all cards, tasks, and invitations",
     });
   } catch (err) {
     next(err);

@@ -1,62 +1,62 @@
-import { useState } from "react";
-import { sendOtp, verifyOtp } from "../../../api";
+import { useState, useEffect } from "react";
+import { auth } from "../../../firebase";
+import { sendSignInLinkToEmail, isSignInWithEmailLink, signInWithEmailLink } from "firebase/auth";
 
 export const useAuthForm = (onLoginSuccess: (email: string, token: string) => void) => {
   const [step, setStep] = useState<number>(1);
   const [email, setEmail] = useState<string>("");
-  const [code, setCode] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(false);
-
-  // Feedback state
   const [error, setError] = useState<string>("");
   const [success, setSuccess] = useState<string>("");
+
+  useEffect(() => {
+    if (isSignInWithEmailLink(auth, window.location.href)) {
+      let savedEmail = window.localStorage.getItem("emailForSignIn");
+      if (!savedEmail) {
+        savedEmail = window.prompt("Please provide your email for confirmation");
+      }
+      
+      if (savedEmail) {
+        setLoading(true);
+        signInWithEmailLink(auth, savedEmail, window.location.href)
+          .then(async (result) => {
+            window.localStorage.removeItem("emailForSignIn");
+            const token = await result.user.getIdToken();
+            onLoginSuccess(result.user.email || savedEmail!, token);
+          })
+          .catch((err) => {
+            setError(err.message || "Failed to sign in with email link.");
+            setLoading(false);
+          });
+      }
+    }
+  }, [onLoginSuccess]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
     setSuccess("");
 
-    if (step === 1) {
-      if (!email) {
-        setError("Please enter your email address.");
-        return;
-      }
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(email)) {
-        setError("Please enter a valid email address.");
-        return;
-      }
+    if (!email) {
+      setError("Please enter your email address.");
+      return;
+    }
 
-      setLoading(true);
-      try {
-        await sendOtp(email);
-        setSuccess("OTP sent to your email.");
-        setStep(2);
-      } catch (err: any) {
-        setError(err.message || "Failed to send OTP.");
-      } finally {
-        setLoading(false);
-      }
-    } else {
-      if (!code) {
-        setError("Please enter the verification code.");
-        return;
-      }
-      if (code.length < 4) {
-        setError("Verification code must be at least 4 characters.");
-        return;
-      }
+    setLoading(true);
+    const actionCodeSettings = {
+      url: window.location.origin,
+      handleCodeInApp: true,
+    };
 
-      setLoading(true);
-      try {
-        const data = await verifyOtp(email, code);
-        setSuccess("Logged in successfully!");
-        onLoginSuccess(data.email, data.token);
-      } catch (err: any) {
-        setError(err.message || "An error occurred. Please try again.");
-      } finally {
-        setLoading(false);
-      }
+    try {
+      await sendSignInLinkToEmail(auth, email, actionCodeSettings);
+      window.localStorage.setItem("emailForSignIn", email);
+      setSuccess("Magic link sent to your email! Click it to log in.");
+      setStep(2);
+    } catch (err: any) {
+      setError(err.message || "Failed to send magic link.");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -64,8 +64,6 @@ export const useAuthForm = (onLoginSuccess: (email: string, token: string) => vo
     step,
     email,
     setEmail,
-    code,
-    setCode,
     loading,
     error,
     success,

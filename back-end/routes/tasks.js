@@ -1,33 +1,30 @@
 var express = require("express");
 var router = express.Router({ mergeParams: true });
-
-const Card = require("../models/Card");
-const Task = require("../models/Task");
-const Board = require("../models/Board");
+const { db } = require("../utils/firebase");
 
 /* Retrieve All Tasks */
 router.get("/", async function (req, res, next) {
   try {
     const { boardId, cardId } = req.params;
-    const board = await Board.findById(boardId);
-    if (!board) {
+    const boardDoc = await db.collection("boards").doc(boardId).get();
+    if (!boardDoc.exists) {
       return res.status(404).json({ error: "Board not found" });
     }
-    const card = await Card.findOne({ _id: cardId, boardId });
-    if (!card) {
+    const cardDoc = await db.collection("cards").doc(cardId).get();
+    if (!cardDoc.exists || cardDoc.data().boardId !== boardId) {
       return res.status(404).json({ error: "Card not found" });
     }
 
-    const isOwner = board.userId.toString() === req.user._id.toString();
-    const isBoardMember = board.list_member && board.list_member.some(m => {
-      const mId = m._id ? m._id.toString() : m.toString();
-      return mId === req.user._id.toString();
-    });
+    const board = boardDoc.data();
+    const isOwner = board.userId === req.user._id;
+    const isBoardMember = (board.list_member || []).includes(req.user._id);
+    
     if (!isOwner && !isBoardMember) {
       return res.status(404).json({ error: "Card not found" });
     }
 
-    const tasks = await Task.find({ cardId });
+    const tasksSnap = await db.collection("tasks").where("cardId", "==", cardId).get();
+    const tasks = tasksSnap.docs.map(doc => ({ _id: doc.id, ...doc.data() }));
     res.json(tasks);
   } catch (err) {
     next(err);
@@ -38,29 +35,28 @@ router.get("/", async function (req, res, next) {
 router.get("/:id", async function (req, res, next) {
   try {
     const { boardId, cardId, id } = req.params;
-    const board = await Board.findById(boardId);
-    if (!board) {
+    const boardDoc = await db.collection("boards").doc(boardId).get();
+    if (!boardDoc.exists) {
       return res.status(404).json({ error: "Board not found" });
     }
-    const card = await Card.findOne({ _id: cardId, boardId });
-    if (!card) {
+    const cardDoc = await db.collection("cards").doc(cardId).get();
+    if (!cardDoc.exists || cardDoc.data().boardId !== boardId) {
       return res.status(404).json({ error: "Card not found" });
     }
 
-    const isOwner = board.userId.toString() === req.user._id.toString();
-    const isBoardMember = board.list_member && board.list_member.some(m => {
-      const mId = m._id ? m._id.toString() : m.toString();
-      return mId === req.user._id.toString();
-    });
+    const board = boardDoc.data();
+    const isOwner = board.userId === req.user._id;
+    const isBoardMember = (board.list_member || []).includes(req.user._id);
+    
     if (!isOwner && !isBoardMember) {
       return res.status(404).json({ error: "Card not found" });
     }
 
-    const task = await Task.findOne({ _id: id, cardId });
-    if (!task) {
+    const taskDoc = await db.collection("tasks").doc(id).get();
+    if (!taskDoc.exists || taskDoc.data().cardId !== cardId) {
       return res.status(404).json({ error: "Task not found" });
     }
-    res.json(task);
+    res.json({ _id: taskDoc.id, ...taskDoc.data() });
   } catch (err) {
     next(err);
   }
@@ -70,28 +66,40 @@ router.get("/:id", async function (req, res, next) {
 router.post("/", async function (req, res, next) {
   try {
     const { boardId, cardId } = req.params;
-    const board = await Board.findById(boardId);
-    if (!board) {
+    const boardDoc = await db.collection("boards").doc(boardId).get();
+    if (!boardDoc.exists) {
       return res.status(404).json({ error: "Board not found" });
     }
-    const card = await Card.findOne({ _id: cardId, boardId });
-    if (!card) {
+    const cardRef = db.collection("cards").doc(cardId);
+    const cardDoc = await cardRef.get();
+    if (!cardDoc.exists || cardDoc.data().boardId !== boardId) {
       return res.status(404).json({ error: "Card not found" });
     }
 
-    const isOwner = board.userId.toString() === req.user._id.toString();
+    const isOwner = boardDoc.data().userId === req.user._id;
     if (!isOwner) {
       return res.status(403).json({ error: "Access denied" });
     }
 
     const { title, description, status } = req.body;
-    const task = new Task({ title, description, status, cardId });
-    await task.save();
+    const taskRef = db.collection("tasks").doc();
+    const taskData = {
+      title,
+      description,
+      status,
+      cardId,
+      memberId: [],
+      githubAttachments: [],
+      createdAt: new Date()
+    };
+    await taskRef.set(taskData);
 
-    card.task_count = (card.task_count || 0) + 1;
-    await card.save();
+    const { FieldValue } = require("firebase-admin/firestore");
+    await cardRef.update({
+      task_count: FieldValue.increment(1)
+    });
 
-    res.status(201).json(task);
+    res.status(201).json({ _id: taskRef.id, ...taskData });
   } catch (err) {
     next(err);
   }
@@ -101,53 +109,57 @@ router.post("/", async function (req, res, next) {
 router.put("/:id", async function (req, res, next) {
   try {
     const { boardId, cardId, id } = req.params;
-    const board = await Board.findById(boardId);
-    if (!board) {
+    const boardDoc = await db.collection("boards").doc(boardId).get();
+    if (!boardDoc.exists) {
       return res.status(404).json({ error: "Board not found" });
     }
-    const card = await Card.findOne({ _id: cardId, boardId });
-    if (!card) {
+    const cardDoc = await db.collection("cards").doc(cardId).get();
+    if (!cardDoc.exists || cardDoc.data().boardId !== boardId) {
       return res.status(404).json({ error: "Card not found" });
     }
 
-    const isOwner = board.userId.toString() === req.user._id.toString();
-    const isBoardMember = board.list_member && board.list_member.some(m => {
-      const mId = m._id ? m._id.toString() : m.toString();
-      return mId === req.user._id.toString();
-    });
+    const board = boardDoc.data();
+    const isOwner = board.userId === req.user._id;
+    const isBoardMember = (board.list_member || []).includes(req.user._id);
+    
     if (!isOwner && !isBoardMember) {
       return res.status(404).json({ error: "Card not found" });
     }
 
-    const task = await Task.findOne({ _id: id, cardId });
-    if (!task) {
+    const taskRef = db.collection("tasks").doc(id);
+    const taskDoc = await taskRef.get();
+    if (!taskDoc.exists || taskDoc.data().cardId !== cardId) {
       return res.status(404).json({ error: "Task not found" });
     }
 
+    const task = taskDoc.data();
+    const updates = {};
+
     if (!isOwner) {
-      // Must be assigned to update status
-      const isAssigned = task.memberId.some((mId) => mId.toString() === req.user._id.toString());
+      const isAssigned = (task.memberId || []).includes(req.user._id);
       if (!isAssigned) {
         return res.status(403).json({ error: "Access denied: You are not assigned to this task" });
       }
 
-      // Cannot update title or description
       const { title, description } = req.body;
       if (title !== undefined || description !== undefined) {
         return res.status(403).json({ error: "Access denied: Members can only update task status" });
       }
 
       const { status } = req.body;
-      if (status !== undefined) task.status = status;
+      if (status !== undefined) updates.status = status;
     } else {
       const { title, description, status } = req.body;
-      if (title !== undefined) task.title = title;
-      if (description !== undefined) task.description = description;
-      if (status !== undefined) task.status = status;
+      if (title !== undefined) updates.title = title;
+      if (description !== undefined) updates.description = description;
+      if (status !== undefined) updates.status = status;
     }
 
-    await task.save();
-    res.json(task);
+    if (Object.keys(updates).length > 0) {
+      await taskRef.update(updates);
+    }
+    
+    res.json({ _id: taskRef.id, ...task, ...updates });
   } catch (err) {
     next(err);
   }
@@ -157,27 +169,32 @@ router.put("/:id", async function (req, res, next) {
 router.delete("/:id", async function (req, res, next) {
   try {
     const { boardId, cardId, id } = req.params;
-    const board = await Board.findById(boardId);
-    if (!board) {
+    const boardDoc = await db.collection("boards").doc(boardId).get();
+    if (!boardDoc.exists) {
       return res.status(404).json({ error: "Board not found" });
     }
-    const card = await Card.findOne({ _id: cardId, boardId });
-    if (!card) {
+    const cardRef = db.collection("cards").doc(cardId);
+    const cardDoc = await cardRef.get();
+    if (!cardDoc.exists || cardDoc.data().boardId !== boardId) {
       return res.status(404).json({ error: "Card not found" });
     }
 
-    const isOwner = board.userId.toString() === req.user._id.toString();
-    if (!isOwner) {
+    if (boardDoc.data().userId !== req.user._id) {
       return res.status(403).json({ error: "Access denied" });
     }
 
-    const task = await Task.findOneAndDelete({ _id: id, cardId });
-    if (!task) {
+    const taskRef = db.collection("tasks").doc(id);
+    const taskDoc = await taskRef.get();
+    if (!taskDoc.exists || taskDoc.data().cardId !== cardId) {
       return res.status(404).json({ error: "Task not found" });
     }
 
-    card.task_count = Math.max(0, (card.task_count || 0) - 1);
-    await card.save();
+    await taskRef.delete();
+
+    const currentCount = cardDoc.data().task_count || 0;
+    await cardRef.update({
+      task_count: Math.max(0, currentCount - 1)
+    });
 
     res.json({ message: "Task successfully deleted" });
   } catch (err) {
@@ -189,30 +206,39 @@ router.delete("/:id", async function (req, res, next) {
 router.get("/:id/assign", async function (req, res, next) {
   try {
     const { boardId, cardId, id } = req.params;
-    const board = await Board.findById(boardId);
-    if (!board) {
+    const boardDoc = await db.collection("boards").doc(boardId).get();
+    if (!boardDoc.exists) {
       return res.status(404).json({ error: "Board not found" });
     }
-    const card = await Card.findOne({ _id: cardId, boardId });
-    if (!card) {
+    const cardDoc = await db.collection("cards").doc(cardId).get();
+    if (!cardDoc.exists || cardDoc.data().boardId !== boardId) {
       return res.status(404).json({ error: "Card not found" });
     }
 
-    const isOwner = board.userId.toString() === req.user._id.toString();
-    const isBoardMember = board.list_member && board.list_member.some(m => {
-      const mId = m._id ? m._id.toString() : m.toString();
-      return mId === req.user._id.toString();
-    });
+    const board = boardDoc.data();
+    const isOwner = board.userId === req.user._id;
+    const isBoardMember = (board.list_member || []).includes(req.user._id);
+    
     if (!isOwner && !isBoardMember) {
       return res.status(404).json({ error: "Card not found" });
     }
 
-    const task = await Task.findOne({ _id: id, cardId }).populate("memberId", "_id email");
-    if (!task) {
+    const taskDoc = await db.collection("tasks").doc(id).get();
+    if (!taskDoc.exists || taskDoc.data().cardId !== cardId) {
       return res.status(404).json({ error: "Task not found" });
     }
 
-    res.json(task.memberId);
+    const memberIds = taskDoc.data().memberId || [];
+    if (memberIds.length === 0) return res.json([]);
+
+    const members = [];
+    for (const mId of memberIds) {
+      const mDoc = await db.collection("users").doc(mId).get();
+      if (mDoc.exists) {
+        members.push({ _id: mDoc.id, email: mDoc.data().email });
+      }
+    }
+    res.json(members);
   } catch (err) {
     next(err);
   }
@@ -222,22 +248,23 @@ router.get("/:id/assign", async function (req, res, next) {
 router.post("/:id/assign", async function (req, res, next) {
   try {
     const { boardId, cardId, id } = req.params;
-    const board = await Board.findById(boardId);
-    if (!board) {
+    const boardDoc = await db.collection("boards").doc(boardId).get();
+    if (!boardDoc.exists) {
       return res.status(404).json({ error: "Board not found" });
     }
-    const card = await Card.findOne({ _id: cardId, boardId });
-    if (!card) {
+    const cardDoc = await db.collection("cards").doc(cardId).get();
+    if (!cardDoc.exists || cardDoc.data().boardId !== boardId) {
       return res.status(404).json({ error: "Card not found" });
     }
 
-    const isOwner = board.userId.toString() === req.user._id.toString();
-    if (!isOwner) {
+    const board = boardDoc.data();
+    if (board.userId !== req.user._id) {
       return res.status(404).json({ error: "Card not found" });
     }
 
-    const task = await Task.findOne({ _id: id, cardId });
-    if (!task) {
+    const taskRef = db.collection("tasks").doc(id);
+    const taskDoc = await taskRef.get();
+    if (!taskDoc.exists || taskDoc.data().cardId !== cardId) {
       return res.status(404).json({ error: "Task not found" });
     }
 
@@ -246,26 +273,23 @@ router.post("/:id/assign", async function (req, res, next) {
       return res.status(400).json({ error: "memberId is required" });
     }
 
-    // Check if user exists
-    const User = require("../models/User");
-    const targetUser = await User.findById(memberId);
-    if (!targetUser) {
+    const targetUserDoc = await db.collection("users").doc(memberId).get();
+    if (!targetUserDoc.exists) {
       return res.status(404).json({ error: "User to assign not found" });
     }
 
-    // Check if user is a member of the board
-    const isMemberOfBoard = board.list_member.includes(memberId) || board.userId.toString() === memberId.toString();
+    const isMemberOfBoard = (board.list_member || []).includes(memberId) || board.userId === memberId;
     if (!isMemberOfBoard) {
       return res.status(400).json({ error: "User is not a member of this board" });
     }
 
-    // Add to memberId array
-    if (!task.memberId.includes(memberId)) {
-      task.memberId.push(memberId);
-      await task.save();
-    }
+    const { FieldValue } = require("firebase-admin/firestore");
+    await taskRef.update({
+      memberId: FieldValue.arrayUnion(memberId)
+    });
 
-    res.json(task);
+    const updatedTaskDoc = await taskRef.get();
+    res.json({ _id: taskRef.id, ...updatedTaskDoc.data() });
   } catch (err) {
     next(err);
   }
@@ -275,30 +299,32 @@ router.post("/:id/assign", async function (req, res, next) {
 router.delete("/:id/assign/:memberId", async function (req, res, next) {
   try {
     const { boardId, cardId, id, memberId } = req.params;
-    const board = await Board.findById(boardId);
-    if (!board) {
+    const boardDoc = await db.collection("boards").doc(boardId).get();
+    if (!boardDoc.exists) {
       return res.status(404).json({ error: "Board not found" });
     }
-    const card = await Card.findOne({ _id: cardId, boardId });
-    if (!card) {
+    const cardDoc = await db.collection("cards").doc(cardId).get();
+    if (!cardDoc.exists || cardDoc.data().boardId !== boardId) {
       return res.status(404).json({ error: "Card not found" });
     }
 
-    const isOwner = board.userId.toString() === req.user._id.toString();
-    if (!isOwner) {
+    if (boardDoc.data().userId !== req.user._id) {
       return res.status(404).json({ error: "Card not found" });
     }
 
-    const task = await Task.findOne({ _id: id, cardId });
-    if (!task) {
+    const taskRef = db.collection("tasks").doc(id);
+    const taskDoc = await taskRef.get();
+    if (!taskDoc.exists || taskDoc.data().cardId !== cardId) {
       return res.status(404).json({ error: "Task not found" });
     }
 
-    // Remove from memberId array
-    task.memberId = task.memberId.filter((mId) => mId.toString() !== memberId.toString());
-    await task.save();
+    const { FieldValue } = require("firebase-admin/firestore");
+    await taskRef.update({
+      memberId: FieldValue.arrayRemove(memberId)
+    });
 
-    res.json({ message: "Member successfully unassigned from task", task });
+    const updatedTaskDoc = await taskRef.get();
+    res.json({ message: "Member successfully unassigned from task", task: { _id: taskRef.id, ...updatedTaskDoc.data() } });
   } catch (err) {
     next(err);
   }
@@ -314,53 +340,53 @@ router.put("/:id/move", async function (req, res, next) {
       return res.status(400).json({ error: "newCardId is required" });
     }
 
-    const board = await Board.findById(boardId);
-    if (!board) {
+    const boardDoc = await db.collection("boards").doc(boardId).get();
+    if (!boardDoc.exists) {
       return res.status(404).json({ error: "Board not found" });
     }
 
-    const isOwner = board.userId.toString() === req.user._id.toString();
-    const isBoardMember = board.list_member && board.list_member.some(m => {
-      const mId = m._id ? m._id.toString() : m.toString();
-      return mId === req.user._id.toString();
-    });
+    const board = boardDoc.data();
+    const isOwner = board.userId === req.user._id;
+    const isBoardMember = (board.list_member || []).includes(req.user._id);
     if (!isOwner && !isBoardMember) {
       return res.status(404).json({ error: "Card not found" });
     }
 
-    const oldCard = await Card.findOne({ _id: cardId, boardId });
-    if (!oldCard) {
+    const oldCardRef = db.collection("cards").doc(cardId);
+    const oldCardDoc = await oldCardRef.get();
+    if (!oldCardDoc.exists || oldCardDoc.data().boardId !== boardId) {
       return res.status(404).json({ error: "Old Card not found" });
     }
 
-    const newCard = await Card.findOne({ _id: newCardId, boardId });
-    if (!newCard) {
+    const newCardRef = db.collection("cards").doc(newCardId);
+    const newCardDoc = await newCardRef.get();
+    if (!newCardDoc.exists || newCardDoc.data().boardId !== boardId) {
       return res.status(404).json({ error: "New Card not found" });
     }
 
-    const task = await Task.findOne({ _id: id, cardId });
-    if (!task) {
+    const taskRef = db.collection("tasks").doc(id);
+    const taskDoc = await taskRef.get();
+    if (!taskDoc.exists || taskDoc.data().cardId !== cardId) {
       return res.status(404).json({ error: "Task not found" });
     }
 
-    // Must be assigned or owner to move task
+    const task = taskDoc.data();
     if (!isOwner) {
-      const isAssigned = task.memberId.some((mId) => mId.toString() === req.user._id.toString());
+      const isAssigned = (task.memberId || []).includes(req.user._id);
       if (!isAssigned) {
          return res.status(403).json({ error: "Access denied: You are not assigned to this task" });
       }
     }
 
-    task.cardId = newCardId;
-    await task.save();
+    await taskRef.update({ cardId: newCardId });
 
-    oldCard.task_count = Math.max(0, (oldCard.task_count || 0) - 1);
-    await oldCard.save();
+    const currentOldCount = oldCardDoc.data().task_count || 0;
+    await oldCardRef.update({ task_count: Math.max(0, currentOldCount - 1) });
 
-    newCard.task_count = (newCard.task_count || 0) + 1;
-    await newCard.save();
+    const { FieldValue } = require("firebase-admin/firestore");
+    await newCardRef.update({ task_count: FieldValue.increment(1) });
 
-    res.json(task);
+    res.json({ _id: taskRef.id, ...task, cardId: newCardId });
   } catch (err) {
     next(err);
   }
@@ -376,25 +402,32 @@ router.post("/:id/github-attach", async function (req, res, next) {
       return res.status(400).json({ error: "Invalid attachment type" });
     }
 
-    const task = await Task.findOne({ _id: id, cardId });
-    if (!task) return res.status(404).json({ error: "Task not found" });
+    const taskRef = db.collection("tasks").doc(id);
+    const taskDoc = await taskRef.get();
+    if (!taskDoc.exists || taskDoc.data().cardId !== cardId) {
+      return res.status(404).json({ error: "Task not found" });
+    }
 
-    // Validate access (basic check)
-    const board = await Board.findById(boardId);
-    if (!board) return res.status(404).json({ error: "Board not found" });
+    const boardDoc = await db.collection("boards").doc(boardId).get();
+    if (!boardDoc.exists) return res.status(404).json({ error: "Board not found" });
 
-    const newAttachment = { type, number, sha };
-    task.githubAttachments.push(newAttachment);
-    await task.save();
-
-    const savedAttachment = task.githubAttachments[task.githubAttachments.length - 1];
+    // Generate a simple ID for the attachment
+    const attachmentId = Math.random().toString(36).substring(2, 10);
+    const newAttachment = { _id: attachmentId, type };
+    if (number !== undefined) newAttachment.number = number;
+    if (sha !== undefined) newAttachment.sha = sha;
+    
+    const { FieldValue } = require("firebase-admin/firestore");
+    await taskRef.update({
+      githubAttachments: FieldValue.arrayUnion(newAttachment)
+    });
 
     res.status(201).json({
       taskId: id,
-      attachmentId: savedAttachment._id,
-      type: savedAttachment.type,
-      number: savedAttachment.number,
-      sha: savedAttachment.sha,
+      attachmentId: attachmentId,
+      type,
+      number,
+      sha,
     });
   } catch (err) {
     next(err);
@@ -405,10 +438,12 @@ router.post("/:id/github-attach", async function (req, res, next) {
 router.get("/:id/github-attachments", async function (req, res, next) {
   try {
     const { cardId, id } = req.params;
-    const task = await Task.findOne({ _id: id, cardId });
-    if (!task) return res.status(404).json({ error: "Task not found" });
+    const taskDoc = await db.collection("tasks").doc(id).get();
+    if (!taskDoc.exists || taskDoc.data().cardId !== cardId) {
+      return res.status(404).json({ error: "Task not found" });
+    }
 
-    const attachments = task.githubAttachments.map(att => ({
+    const attachments = (taskDoc.data().githubAttachments || []).map(att => ({
       attachmentId: att._id,
       type: att.type,
       number: att.number,
@@ -425,13 +460,21 @@ router.get("/:id/github-attachments", async function (req, res, next) {
 router.delete("/:id/github-attachments/:attachmentId", async function (req, res, next) {
   try {
     const { cardId, id, attachmentId } = req.params;
-    const task = await Task.findOne({ _id: id, cardId });
-    if (!task) return res.status(404).json({ error: "Task not found" });
+    const taskRef = db.collection("tasks").doc(id);
+    const taskDoc = await taskRef.get();
+    if (!taskDoc.exists || taskDoc.data().cardId !== cardId) {
+      return res.status(404).json({ error: "Task not found" });
+    }
 
-    task.githubAttachments = task.githubAttachments.filter(
-      att => att._id.toString() !== attachmentId.toString()
-    );
-    await task.save();
+    const attachments = taskDoc.data().githubAttachments || [];
+    const attachmentToRemove = attachments.find(att => att._id === attachmentId);
+
+    if (attachmentToRemove) {
+      const { FieldValue } = require("firebase-admin/firestore");
+      await taskRef.update({
+        githubAttachments: FieldValue.arrayRemove(attachmentToRemove)
+      });
+    }
 
     res.status(204).send();
   } catch (err) {

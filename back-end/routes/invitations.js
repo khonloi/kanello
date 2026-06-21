@@ -1,11 +1,12 @@
 var express = require("express");
 var router = express.Router();
-const Invitation = require("../models/Invitation");
+const { db } = require("../utils/firebase");
 
 /* Retrieve all invitations for the authenticated user */
 router.get("/", async function (req, res, next) {
   try {
-    const invitations = await Invitation.find({ member_id: req.user._id });
+    const invitesSnap = await db.collection("invitations").where("member_id", "==", req.user._id).get();
+    const invitations = invitesSnap.docs.map(doc => ({ _id: doc.id, ...doc.data() }));
     res.json(invitations);
   } catch (err) {
     next(err);
@@ -15,7 +16,8 @@ router.get("/", async function (req, res, next) {
 /* Retrieve all invitations sent by the authenticated user */
 router.get("/sent", async function (req, res, next) {
   try {
-    const invitations = await Invitation.find({ board_owner_id: req.user._id });
+    const invitesSnap = await db.collection("invitations").where("board_owner_id", "==", req.user._id).get();
+    const invitations = invitesSnap.docs.map(doc => ({ _id: doc.id, ...doc.data() }));
     res.json(invitations);
   } catch (err) {
     next(err);

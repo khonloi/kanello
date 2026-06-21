@@ -1,4 +1,4 @@
-import { apiFetch } from "./client";
+
 
 export interface GithubBranch {
   name: string;
@@ -28,9 +28,20 @@ export interface GithubInfo {
   commits: GithubCommit[];
 }
 
+import { functions } from "../firebase";
+import { httpsCallable } from "firebase/functions";
+import { apiFetch } from "./client";
+
 export const getGithubInfo = async (
   owner: string,
   repo: string,
 ): Promise<GithubInfo> => {
-  return apiFetch(`/repositories/${owner}/${repo}/github-info`);
+  try {
+    const getGithubInfoFn = httpsCallable(functions, "getGithubInfo");
+    const result = await getGithubInfoFn({ owner, repo });
+    return result.data as GithubInfo;
+  } catch (err) {
+    console.warn("Cloud Function getGithubInfo failed or not deployed, falling back to Express backend route:", err);
+    return apiFetch(`/repositories/${owner}/${repo}/github-info`);
+  }
 };

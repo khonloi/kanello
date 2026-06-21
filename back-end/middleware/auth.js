@@ -1,7 +1,4 @@
-const jwt = require("jsonwebtoken");
-const User = require("../models/User");
-
-const JWT_SECRET = process.env.JWT_SECRET || "your-fallback-secret-key";
+const { auth, db } = require("../utils/firebase");
 
 module.exports = async function (req, res, next) {
   try {
@@ -11,16 +8,34 @@ module.exports = async function (req, res, next) {
     }
 
     const token = authHeader.split(" ")[1];
-    const decoded = jwt.verify(token, JWT_SECRET);
+    const decodedToken = await auth.verifyIdToken(token);
 
-    const user = await User.findById(decoded.userId);
-    if (!user) {
-      return res.status(401).json({ error: "Invalid token" });
+    const userRef = db.collection("users").doc(decodedToken.uid);
+    let userDoc = await userRef.get();
+    let userData = {};
+
+    if (!userDoc.exists) {
+      userData = {
+        email: decodedToken.email || "",
+        createdAt: new Date()
+      };
+      await userRef.set(userData);
+      userDoc = await userRef.get();
+    } else {
+      userData = userDoc.data();
     }
 
-    req.user = user;
+    // Attach _id for backward compatibility with Mongoose code
+    req.user = {
+      _id: decodedToken.uid,
+      uid: decodedToken.uid,
+      email: decodedToken.email,
+      ...userData,
+    };
+    
     next();
   } catch (err) {
+    console.error("Auth Middleware Error:", err);
     return res.status(401).json({ error: "Invalid or expired token" });
   }
 };

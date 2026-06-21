@@ -1,13 +1,9 @@
-const User = require("../models/User");
-const Board = require("../models/Board");
-const Card = require("../models/Card");
-const Task = require("../models/Task");
-const Invitation = require("../models/Invitation");
+const { db } = require("./firebase");
 
 async function seedDatabase() {
   try {
-    const userCount = await User.countDocuments();
-    if (userCount > 0) {
+    const usersSnapshot = await db.collection("users").limit(1).get();
+    if (!usersSnapshot.empty) {
       console.log("Database already has data. Skipping seed.");
       return;
     }
@@ -15,117 +11,124 @@ async function seedDatabase() {
     console.log("Seeding database with comprehensive demo data...");
 
     // 1. Create Users
-    const users = await User.insertMany([
-      { email: "alice@example.com", verificationCode: "123456" },
-      { email: "bob@example.com", verificationCode: "123456" },
-      { email: "charlie@example.com", verificationCode: "123456" },
-    ]);
+    const aliceRef = db.collection("users").doc();
+    const bobRef = db.collection("users").doc();
+    const charlieRef = db.collection("users").doc();
 
-    const alice = users[0];
-    const bob = users[1];
-    const charlie = users[2];
+    await aliceRef.set({ email: "alice@example.com" });
+    await bobRef.set({ email: "bob@example.com" });
+    await charlieRef.set({ email: "charlie@example.com" });
 
     // 2. Create Boards
-    const projectBoard = await Board.create({
+    const projectBoardRef = db.collection("boards").doc();
+    await projectBoardRef.set({
       name: "Project Kanello",
       description: "A collaborative Kanban board for the Kanello team.",
-      userId: alice._id,
-      list_member: [alice._id, bob._id, charlie._id],
+      userId: aliceRef.id,
+      list_member: [aliceRef.id, bobRef.id, charlieRef.id],
+      createdAt: new Date(),
     });
 
-    const personalBoard = await Board.create({
+    const personalBoardRef = db.collection("boards").doc();
+    await personalBoardRef.set({
       name: "Personal Tasks",
       description: "Bob's private list of things to do.",
-      userId: bob._id,
-      list_member: [bob._id],
+      userId: bobRef.id,
+      list_member: [bobRef.id],
+      createdAt: new Date(),
     });
 
     // 3. Create Cards on projectBoard
-    const todoCard = await Card.create({
-      boardId: projectBoard._id,
+    const todoCardRef = db.collection("cards").doc();
+    await todoCardRef.set({
+      boardId: projectBoardRef.id,
       name: "To Do",
       description: "Tasks that are ready to be worked on.",
-      list_member: [alice._id, bob._id, charlie._id],
+      list_member: [aliceRef.id, bobRef.id, charlieRef.id],
+      task_count: 2,
+      createdAt: new Date(),
     });
 
-    const doingCard = await Card.create({
-      boardId: projectBoard._id,
+    const doingCardRef = db.collection("cards").doc();
+    await doingCardRef.set({
+      boardId: projectBoardRef.id,
       name: "Doing",
       description: "Tasks currently in progress.",
-      list_member: [alice._id, bob._id, charlie._id],
+      list_member: [aliceRef.id, bobRef.id, charlieRef.id],
+      task_count: 1,
+      createdAt: new Date(),
     });
 
-    const doneCard = await Card.create({
-      boardId: projectBoard._id,
+    const doneCardRef = db.collection("cards").doc();
+    await doneCardRef.set({
+      boardId: projectBoardRef.id,
       name: "Done",
       description: "Completed tasks.",
-      list_member: [alice._id, bob._id, charlie._id],
+      list_member: [aliceRef.id, bobRef.id, charlieRef.id],
+      task_count: 1,
+      createdAt: new Date(),
     });
 
     // Create a Card on personalBoard
-    const personalTodoCard = await Card.create({
-      boardId: personalBoard._id,
+    const personalTodoCardRef = db.collection("cards").doc();
+    await personalTodoCardRef.set({
+      boardId: personalBoardRef.id,
       name: "Inbox",
       description: "Default inbox card.",
-      list_member: [bob._id],
+      list_member: [bobRef.id],
+      task_count: 0,
+      createdAt: new Date(),
     });
 
     // 4. Create Tasks
-    // To Do Tasks
-    const todoTask1 = await Task.create({
+    const todoTask1Ref = db.collection("tasks").doc();
+    await todoTask1Ref.set({
       title: "Design Landing Page",
       description: "Create wireframes and mockups for the landing page.",
       status: "To Do",
-      cardId: todoCard._id,
-      memberId: [alice._id],
+      cardId: todoCardRef.id,
+      memberId: [aliceRef.id],
+      createdAt: new Date(),
     });
 
-    const todoTask2 = await Task.create({
+    const todoTask2Ref = db.collection("tasks").doc();
+    await todoTask2Ref.set({
       title: "Setup CI/CD Pipeline",
       description: "Configure GitHub Actions to automatically run tests and build.",
       status: "To Do",
-      cardId: todoCard._id,
-      memberId: [charlie._id],
+      cardId: todoCardRef.id,
+      memberId: [charlieRef.id],
+      createdAt: new Date(),
     });
 
-    // Doing Tasks
-    const doingTask1 = await Task.create({
+    const doingTask1Ref = db.collection("tasks").doc();
+    await doingTask1Ref.set({
       title: "Implement Auth Flow",
       description: "Develop login, JWT generation, and verification mechanisms.",
       status: "Doing",
-      cardId: doingCard._id,
-      memberId: [bob._id, alice._id],
+      cardId: doingCardRef.id,
+      memberId: [bobRef.id, aliceRef.id],
+      createdAt: new Date(),
     });
 
-    // Done Tasks
-    const doneTask1 = await Task.create({
+    const doneTask1Ref = db.collection("tasks").doc();
+    await doneTask1Ref.set({
       title: "Initialize Database Schema",
       description: "Define Mongoose models for User, Board, Card, Task, and Invitation.",
       status: "Done",
-      cardId: doneCard._id,
-      memberId: [alice._id],
+      cardId: doneCardRef.id,
+      memberId: [aliceRef.id],
+      createdAt: new Date(),
     });
 
-    // Update task_count in Cards
-    todoCard.task_count = 2;
-    await todoCard.save();
-
-    doingCard.task_count = 1;
-    await doingCard.save();
-
-    doneCard.task_count = 1;
-    await doneCard.save();
-
-    personalTodoCard.task_count = 0;
-    await personalTodoCard.save();
-
     // 5. Create Invitations
-    await Invitation.create({
-      boardId: personalBoard._id,
-      board_owner_id: bob._id,
-      member_id: charlie._id,
-      email_member: charlie.email,
+    await db.collection("invitations").add({
+      boardId: personalBoardRef.id,
+      board_owner_id: bobRef.id,
+      member_id: charlieRef.id,
+      email_member: "charlie@example.com",
       status: "pending",
+      createdAt: new Date(),
     });
 
     console.log("Database seeded successfully!");
