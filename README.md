@@ -2,6 +2,34 @@
 
 Welcome to **Kanello**, a modern, full-stack collaborative Kanban board and task management platform (inspired by Trello). Kanello is built with a decoupled architecture featuring a React SPA frontend, an Express.js backend, Firestore database storage, Firebase Authentication, and Firebase Cloud Functions for external integrations (such as GitHub sync).
 
+## Screenshots & UI Gallery
+
+Below are some screenshots showing the Kanello interface and workflow:
+
+<p align="center">
+  <img src="screenshot/Screenshot%202026-06-21%20194752.png" width="45%" alt="Screenshot 1" />
+  <img src="screenshot/Screenshot%202026-06-21%20195059.png" width="45%" alt="Screenshot 2" />
+</p>
+<p align="center">
+  <img src="screenshot/Screenshot%202026-06-21%20195120.png" width="45%" alt="Screenshot 3" />
+  <img src="screenshot/Screenshot%202026-06-21%20195127.png" width="45%" alt="Screenshot 4" />
+</p>
+<p align="center">
+  <img src="screenshot/Screenshot%202026-06-21%20195136.png" width="45%" alt="Screenshot 5" />
+  <img src="screenshot/Screenshot%202026-06-21%20195150.png" width="45%" alt="Screenshot 6" />
+</p>
+<p align="center">
+  <img src="screenshot/Screenshot%202026-06-21%20195200.png" width="45%" alt="Screenshot 7" />
+  <img src="screenshot/Screenshot%202026-06-21%20195223.png" width="45%" alt="Screenshot 8" />
+</p>
+<p align="center">
+  <img src="screenshot/Screenshot%202026-06-21%20195300.png" width="45%" alt="Screenshot 9" />
+  <img src="screenshot/Screenshot%202026-06-21%20195307.png" width="45%" alt="Screenshot 10" />
+</p>
+<p align="center">
+  <img src="screenshot/Screenshot%202026-06-21%20195323.png" width="90%" alt="Screenshot 11" />
+</p>
+
 ---
 
 ## Architecture & Structure
