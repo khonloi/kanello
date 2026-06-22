@@ -7,27 +7,47 @@ Welcome to **Kanello**, a modern, full-stack collaborative Kanban board and task
 Below are some screenshots showing the Kanello interface and workflow:
 
 <p align="center">
-  <img src="screenshot/Screenshot%202026-06-21%20194752.png" width="45%" alt="Screenshot 1" />
-  <img src="screenshot/Screenshot%202026-06-21%20195059.png" width="45%" alt="Screenshot 2" />
+  <img src="screenshot/Screenshot%202026-06-22%20200754.png" width="45%" alt="Screenshot 1" />
+  <img src="screenshot/Screenshot%202026-06-22%20200807.png" width="45%" alt="Screenshot 2" />
 </p>
 <p align="center">
-  <img src="screenshot/Screenshot%202026-06-21%20195120.png" width="45%" alt="Screenshot 3" />
-  <img src="screenshot/Screenshot%202026-06-21%20195127.png" width="45%" alt="Screenshot 4" />
+  <img src="screenshot/Screenshot%202026-06-22%20200822.png" width="45%" alt="Screenshot 3" />
+  <img src="screenshot/Screenshot%202026-06-22%20200926.png" width="45%" alt="Screenshot 4" />
 </p>
 <p align="center">
-  <img src="screenshot/Screenshot%202026-06-21%20195136.png" width="45%" alt="Screenshot 5" />
-  <img src="screenshot/Screenshot%202026-06-21%20195150.png" width="45%" alt="Screenshot 6" />
+  <img src="screenshot/Screenshot%202026-06-22%20201010.png" width="45%" alt="Screenshot 5" />
+  <img src="screenshot/Screenshot%202026-06-22%20201025.png" width="45%" alt="Screenshot 6" />
 </p>
 <p align="center">
-  <img src="screenshot/Screenshot%202026-06-21%20195200.png" width="45%" alt="Screenshot 7" />
-  <img src="screenshot/Screenshot%202026-06-21%20195223.png" width="45%" alt="Screenshot 8" />
+  <img src="screenshot/Screenshot%202026-06-22%20201037.png" width="45%" alt="Screenshot 7" />
+  <img src="screenshot/Screenshot%202026-06-22%20201046.png" width="45%" alt="Screenshot 8" />
 </p>
 <p align="center">
-  <img src="screenshot/Screenshot%202026-06-21%20195300.png" width="45%" alt="Screenshot 9" />
-  <img src="screenshot/Screenshot%202026-06-21%20195307.png" width="45%" alt="Screenshot 10" />
+  <img src="screenshot/Screenshot%202026-06-22%20201059.png" width="45%" alt="Screenshot 9" />
+  <img src="screenshot/Screenshot%202026-06-22%20201138.png" width="45%" alt="Screenshot 10" />
 </p>
 <p align="center">
-  <img src="screenshot/Screenshot%202026-06-21%20195323.png" width="90%" alt="Screenshot 11" />
+  <img src="screenshot/Screenshot%202026-06-22%20201146.png" width="45%" alt="Screenshot 11" />
+  <img src="screenshot/Screenshot%202026-06-22%20201154.png" width="45%" alt="Screenshot 12" />
+</p>
+<p align="center">
+  <img src="screenshot/Screenshot%202026-06-22%20201203.png" width="45%" alt="Screenshot 13" />
+  <img src="screenshot/Screenshot%202026-06-22%20201259.png" width="45%" alt="Screenshot 14" />
+</p>
+<p align="center">
+  <img src="screenshot/Screenshot%202026-06-22%20201335.png" width="45%" alt="Screenshot 15" />
+  <img src="screenshot/Screenshot%202026-06-22%20201346.png" width="45%" alt="Screenshot 16" />
+</p>
+<p align="center">
+  <img src="screenshot/Screenshot%202026-06-22%20201404.png" width="45%" alt="Screenshot 17" />
+  <img src="screenshot/Screenshot%202026-06-22%20201446.png" width="45%" alt="Screenshot 18" />
+</p>
+<p align="center">
+  <img src="screenshot/Screenshot%202026-06-22%20201452.png" width="45%" alt="Screenshot 19" />
+  <img src="screenshot/Screenshot%202026-06-22%20201538.png" width="45%" alt="Screenshot 20" />
+</p>
+<p align="center">
+  <img src="screenshot/Screenshot%202026-06-22%20125719.png" width="90%" alt="Screenshot 21" />
 </p>
 
 ---
